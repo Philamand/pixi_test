@@ -1,4 +1,4 @@
-import { Spritesheet, Texture } from "pixi.js";
+import { Assets, Spritesheet, type Texture } from "pixi.js";
 import tilemapUrl from "../assets/tiny_dungeon_tilemap.png";
 import {
   SHEET_COLS,
@@ -11,6 +11,8 @@ import {
 export type TileTextures = Record<string, Texture>;
 
 export async function loadTilemap(): Promise<TileTextures> {
+  const texture = await Assets.load<Texture>(tilemapUrl);
+
   const frames: Record<
     string,
     { frame: { x: number; y: number; w: number; h: number } }
@@ -26,9 +28,9 @@ export async function loadTilemap(): Promise<TileTextures> {
     };
   }
 
-  const sheet = new Spritesheet(Texture.from(tilemapUrl), {
-    frames,
-    meta: { scale: "1" },
+  const sheet = new Spritesheet({
+    texture,
+    data: { frames, meta: { scale: "1" } },
   });
   await sheet.parse();
   return sheet.textures;
