@@ -1,19 +1,34 @@
+import { CT_RATE, MAX_CT } from "../data/battle";
 import type { Fighter } from "../entities/Fighter";
 
 export class TurnManager {
-  private readonly order: Fighter[];
-  private index = 0;
+  readonly combatants: Fighter[];
 
   constructor(combatants: Fighter[]) {
-    this.order = [...combatants].sort((a, b) => b.stats.speed - a.stats.speed);
+    this.combatants = [...combatants];
   }
 
-  get current(): Fighter {
-    return this.order[this.index];
+  update(deltaMS: number): void {
+    for (const f of this.combatants) {
+      if (f.isAlive) {
+        f.setCt(
+          Math.min(MAX_CT, f.ct + (f.stats.speed * CT_RATE * deltaMS) / 1000),
+        );
+      }
+    }
   }
 
-  next(): Fighter {
-    this.index = (this.index + 1) % this.order.length;
-    return this.current;
+  ready(): Fighter | null {
+    let best: Fighter | null = null;
+    for (const f of this.combatants) {
+      if (f.isAlive && f.ct >= MAX_CT && (!best || f.ct > best.ct)) {
+        best = f;
+      }
+    }
+    return best;
+  }
+
+  consume(f: Fighter): void {
+    f.setCt(0);
   }
 }

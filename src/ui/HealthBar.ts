@@ -4,9 +4,10 @@ export class HealthBar extends Container {
   private readonly fill: Graphics;
 
   constructor(
-    private readonly maxHp: number,
+    private readonly maxValue: number,
     private readonly barWidth = 90,
     private readonly barHeight = 10,
+    private readonly fixedColor?: number,
   ) {
     super();
 
@@ -20,12 +21,14 @@ export class HealthBar extends Container {
     this.fill = new Graphics();
     this.addChild(this.fill);
 
-    this.setHp(maxHp);
+    this.setHp(maxValue);
   }
 
-  setHp(hp: number): void {
-    const ratio = Math.max(0, Math.min(1, hp / this.maxHp));
-    const color = ratio > 0.5 ? 0x4caf50 : ratio > 0.25 ? 0xffc107 : 0xf44336;
+  setHp(value: number): void {
+    const ratio = Math.max(0, Math.min(1, value / this.maxValue));
+    const color =
+      this.fixedColor ??
+      (ratio > 0.5 ? 0x4caf50 : ratio > 0.25 ? 0xffc107 : 0xf44336);
 
     this.fill
       .clear()
