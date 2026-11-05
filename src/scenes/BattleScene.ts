@@ -164,23 +164,21 @@ export class BattleScene implements Scene {
           TILE_INDEX.floorDebris[
             (x * 3 + y * 5) % TILE_INDEX.floorDebris.length
           ];
-        const index = obstacle
-          ? (x + y) % 2 === 0
-            ? TILE_INDEX.rock
-            : TILE_INDEX.rockAlt
-          : (x + y) % 4 === 0
-            ? debris
-            : TILE_INDEX.floor;
-        const texture = this.textures[tileTextureId(index)];
-        if (!texture) continue;
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.5);
-        sprite.scale.set(scale);
-        sprite.position.set(
-          this.origin.x + (x + 0.5) * TILE_SIZE,
-          this.origin.y + (y + 0.5) * TILE_SIZE,
-        );
-        this.tileLayer.addChild(sprite);
+        const rock = (x + y) % 2 === 0 ? TILE_INDEX.rock : TILE_INDEX.rockAlt;
+        const floor = (x + y) % 4 === 0 ? debris : TILE_INDEX.floor;
+        const indices = obstacle ? [TILE_INDEX.floor, rock] : [floor];
+        for (const index of indices) {
+          const texture = this.textures[tileTextureId(index)];
+          if (!texture) continue;
+          const sprite = new Sprite(texture);
+          sprite.anchor.set(0.5);
+          sprite.scale.set(scale);
+          sprite.position.set(
+            this.origin.x + (x + 0.5) * TILE_SIZE,
+            this.origin.y + (y + 0.5) * TILE_SIZE,
+          );
+          this.tileLayer.addChild(sprite);
+        }
       }
     }
   }
