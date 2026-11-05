@@ -1,31 +1,25 @@
 import { Container, Graphics, Text } from "pixi.js";
 
-export type BattleAction = "attack" | "heal" | "defend";
-
-interface MenuItem {
-  action: BattleAction;
+export interface MenuItem {
+  id: string;
   label: string;
+  disabled?: boolean;
 }
 
-const BUTTON_WIDTH = 150;
-const BUTTON_HEIGHT = 38;
+const BUTTON_WIDTH = 160;
+const BUTTON_HEIGHT = 36;
 const BUTTON_GAP = 8;
 
 export class ActionMenu extends Container {
-  private readonly labels = new Map<BattleAction, Text>();
-  private onSelect: ((action: BattleAction) => void) | null = null;
+  private buttons: Container[] = [];
+  private onSelect: ((id: string) => void) | null = null;
 
-  constructor(items: MenuItem[]) {
-    super();
-
-    items.forEach((item, index) => {
-      const button = this.createButton(item, index);
-      this.addChild(button);
-    });
-  }
-
-  show(onSelect: (action: BattleAction) => void): void {
+  show(items: MenuItem[], onSelect: (id: string) => void): void {
+    this.clear();
     this.onSelect = onSelect;
+    items.forEach((item, index) => {
+      this.addChild(this.createButton(item, index));
+    });
     this.visible = true;
   }
 
@@ -34,8 +28,9 @@ export class ActionMenu extends Container {
     this.visible = false;
   }
 
-  setLabel(action: BattleAction, label: string): void {
-    this.labels.get(action)!.text = label;
+  private clear(): void {
+    for (const button of this.buttons) button.destroy();
+    this.buttons = [];
   }
 
   private createButton(item: MenuItem, index: number): Container {
@@ -44,25 +39,29 @@ export class ActionMenu extends Container {
 
     const bg = new Graphics()
       .roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 8)
-      .fill(0x2e4a7a)
-      .stroke({ width: 2, color: 0x6f9fdf });
+      .fill(item.disabled ? 0x3a3a4a : 0x2e4a7a)
+      .stroke({ width: 2, color: item.disabled ? 0x555566 : 0x6f9fdf });
 
     const label = new Text({
       text: item.label,
-      style: { fill: 0xffffff, fontSize: 16 },
+      style: { fill: item.disabled ? 0x8888a0 : 0xffffff, fontSize: 16 },
     });
     label.anchor.set(0.5);
     label.position.set(BUTTON_WIDTH / 2, BUTTON_HEIGHT / 2);
 
     button.addChild(bg, label);
-    button.eventMode = "static";
-    button.cursor = "pointer";
-    button.on("pointerdown", () => this.onSelect?.(item.action));
-    button.on("pointerover", () => button.scale.set(1.05));
-    button.on("pointerout", () => button.scale.set(1));
 
-    this.labels.set(item.action, label);
+    if (item.disabled) {
+      button.alpha = 0.6;
+    } else {
+      button.eventMode = "static";
+      button.cursor = "pointer";
+      button.on("pointerdown", () => this.onSelect?.(item.id));
+      button.on("pointerover", () => button.scale.set(1.05));
+      button.on("pointerout", () => button.scale.set(1));
+    }
 
+    this.buttons.push(button);
     return button;
   }
 }

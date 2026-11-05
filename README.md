@@ -1,7 +1,8 @@
-# Turn-Based RPG (PixiJS v8 + TypeScript + Vite)
+# Tactical RPG (PixiJS v8 + TypeScript + Vite)
 
-A minimal turn-based battle RPG built with PixiJS v8. Battle a Slime by choosing
-Attack / Heal / Defend each turn until one side falls.
+A Final-Fantasy-Tactics-style tactical battle built with PixiJS v8. A party of
+two (Hero + Mage) fights three enemies on a grid battlefield where units act
+based on a charge-time (CT) turn system.
 
 ## Run
 
@@ -21,35 +22,42 @@ src/
 │   ├── Scene.ts          # Scene interface (enter/exit + container)
 │   └── SceneManager.ts   # Switches between scenes, disposes the old one
 ├── scenes/
-│   └── BattleScene.ts    # The turn-based battle: layout, turn flow, win/lose
+│   └── BattleScene.ts    # The tactical battle: grid, turn flow, input, enemy AI
 ├── entities/
-│   └── Fighter.ts        # Combatant model + view (stats, HP, damage, healing)
+│   └── Fighter.ts        # Combatant model + view (HP/MP/CT bars, facing, skills)
 ├── systems/
-│   └── TurnManager.ts    # Turn order (sorted by speed) and advancement
+│   └── TurnManager.ts    # CT charge: units act when their charge reaches 100
 ├── ui/
-│   ├── ActionMenu.ts     # Clickable action buttons (Attack / Heal / Defend)
-│   ├── HealthBar.ts      # HP bar that shifts green -> yellow -> red
+│   ├── ActionMenu.ts     # Generic clickable menu (Move / Attack / Skill / Wait)
+│   ├── TurnOrderPanel.ts # Live turn-order list sorted by charge time
+│   ├── HealthBar.ts      # Generic bar (HP, MP, CT) with optional fixed color
 │   └── BattleLog.ts      # Scrolling message log
 ├── data/
-│   └── battle.ts         # Stats for the player and enemies, tuning constants
+│   └── battle.ts         # Grid config, party/enemy stats, skills, tuning constants
 └── utils/
+    ├── grid.ts           # Tiles, Chebyshev distance, range queries, facing
     └── tween.ts          # Tiny ticker-based tween helper (delays, lunges)
 ```
 
 ## How a battle works
 
-1. `TurnManager` sorts combatants by `speed` and yields them one at a time.
-2. On the player's turn, the `ActionMenu` is shown; picking an action resolves
-   it (damage rolls use `attack - defense` plus a small random variance).
-3. On the enemy's turn, the Slime waits a beat, then lunges and attacks.
-4. `Defend` halves the next incoming damage; `Heal` consumes one of the 3
-   starting potions.
-5. When either fighter's HP reaches 0, a banner is shown and clicking anywhere
+1. Every unit has a charge time (CT) that fills in real time, faster for
+   higher `speed`. When CT reaches 100 the unit takes a turn; the
+   `TurnOrderPanel` shows who is next.
+2. On a unit's turn you may **Move** to any highlighted tile (within the
+   unit's move range, avoiding obstacles and occupied tiles) and then
+   **Attack**, cast a **Skill**, or **Wait**.
+3. Attacks and skills have a range; melee is range 1, the Mage's Fire reaches
+   3 tiles and ignores most defense, Heal targets an ally. Skills cost MP.
+4. Units have a facing direction (shown by the white arrow). Striking a unit
+   from behind deals 150% damage.
+5. Enemies move toward your party and attack when in range.
+6. When one side is wiped out, a banner is shown and clicking anywhere
    restarts the battle.
 
 ## Extending
 
-- Add more enemies in `src/data/battle.ts` and spawn them in `BattleScene`.
+- Tune the grid, obstacles, units, and skills in `src/data/battle.ts`.
 - Add new scenes (title screen, map, shop) by implementing the `Scene`
   interface and calling `sceneManager.switchTo(...)` from `Game`.
 - Replace the `Graphics`-drawn fighters with sprites via `Assets.load(...)`.
