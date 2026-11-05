@@ -1,4 +1,5 @@
 import type { FighterStats } from "../entities/Fighter";
+import { TILE_INDEX } from "./tiles";
 import type { Tile } from "../utils/grid";
 
 export const GRID_COLS = 8;
@@ -26,6 +27,7 @@ export const partyStats: FighterStats[] = [
     range: 1,
     color: 0x4a9eff,
     spawn: { x: 0, y: 2 },
+    sprite: TILE_INDEX.hero,
     skills: [
       {
         id: "power-strike",
@@ -48,6 +50,7 @@ export const partyStats: FighterStats[] = [
     range: 1,
     color: 0xb06ae0,
     spawn: { x: 0, y: 4 },
+    sprite: TILE_INDEX.mage,
     skills: [
       {
         id: "fire",
@@ -82,6 +85,7 @@ export const enemyStats: FighterStats[] = [
     range: 1,
     color: 0x59c24f,
     spawn: { x: 7, y: 1 },
+    sprite: TILE_INDEX.slime,
     skills: [],
   },
   {
@@ -96,20 +100,22 @@ export const enemyStats: FighterStats[] = [
     range: 1,
     color: 0x8a6ad0,
     spawn: { x: 7, y: 3 },
+    sprite: TILE_INDEX.bat,
     skills: [],
   },
   {
-    name: "Slime",
+    name: "Goblin",
     team: "enemy",
-    maxHp: 30,
-    attack: 9,
-    defense: 2,
-    speed: 5,
+    maxHp: 26,
+    attack: 10,
+    defense: 1,
+    speed: 6,
     maxMp: 0,
-    move: 2,
+    move: 3,
     range: 1,
-    color: 0x59c24f,
+    color: 0x7ac24f,
     spawn: { x: 6, y: 4 },
+    sprite: TILE_INDEX.goblin,
     skills: [],
   },
 ];
