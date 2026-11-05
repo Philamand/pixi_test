@@ -60,4 +60,6 @@ src/
 - Tune the grid, obstacles, units, and skills in `src/data/battle.ts`.
 - Add new scenes (title screen, map, shop) by implementing the `Scene`
   interface and calling `sceneManager.switchTo(...)` from `Game`.
-- Replace the `Graphics`-drawn fighters with sprites via `Assets.load(...)`.
+- The Kenney Tiny Dungeon tilemap (`assets/tiny_dungeon_tilemap.png`) is sliced
+  into 16x16 frames by `src/assets.ts`; tile/fighter indices live in
+  `src/data/tiles.ts`. Add new tiles by extending `TILE_INDEX`.

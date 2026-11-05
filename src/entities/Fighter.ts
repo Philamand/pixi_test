@@ -1,5 +1,6 @@
-import { Container, Graphics, Text } from "pixi.js";
-import { MAX_CT } from "../data/battle";
+import { Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
+import { MAX_CT, TILE_SIZE } from "../data/battle";
+import { TILE_PX } from "../data/tiles";
 import { HealthBar } from "../ui/HealthBar";
 import { facingFromDelta, type Facing, type Tile } from "../utils/grid";
 
@@ -28,6 +29,7 @@ export interface FighterStats {
   range: number;
   color: number;
   spawn: Tile;
+  sprite: number;
   skills: Skill[];
 }
 
@@ -45,7 +47,7 @@ export class Fighter extends Container {
   private readonly ctBar: HealthBar;
   private readonly facingGfx = new Graphics();
 
-  constructor(stats: FighterStats) {
+  constructor(stats: FighterStats, texture?: Texture) {
     super();
     this.stats = stats;
     this.hp = stats.maxHp;
@@ -54,13 +56,20 @@ export class Fighter extends Container {
     this.tileY = stats.spawn.y;
     this.facing = stats.team === "enemy" ? "left" : "right";
 
-    this.addChild(
-      new Graphics()
-        .roundRect(-26, -34, 52, 68, 10)
-        .fill(stats.color)
-        .stroke({ width: 3, color: 0x000000 }),
-      this.facingGfx,
-    );
+    if (texture) {
+      const sprite = new Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.scale.set((TILE_SIZE * 0.9) / TILE_PX);
+      this.addChild(sprite, this.facingGfx);
+    } else {
+      this.addChild(
+        new Graphics()
+          .roundRect(-26, -34, 52, 68, 10)
+          .fill(stats.color)
+          .stroke({ width: 3, color: 0x000000 }),
+        this.facingGfx,
+      );
+    }
 
     const nameLabel = new Text({
       text: stats.name,

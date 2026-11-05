@@ -5,9 +5,11 @@ import {
   Graphics,
   Point,
   Rectangle,
+  Sprite,
   Text,
   Ticker,
 } from "pixi.js";
+import type { TileTextures } from "../assets";
 import {
   BACKSTAB_MULTIPLIER,
   enemyStats,
@@ -17,6 +19,7 @@ import {
   partyStats,
   TILE_SIZE,
 } from "../data/battle";
+import { TILE_INDEX, TILE_PX, tileTextureId } from "../data/tiles";
 import { Fighter, type Skill } from "../entities/Fighter";
 import type { Scene } from "../game/Scene";
 import { TurnManager } from "../systems/TurnManager";
@@ -40,6 +43,7 @@ export class BattleScene implements Scene {
   readonly container = new Container();
 
   private readonly bg = new Graphics();
+  private readonly tileLayer = new Container();
   private readonly gridGfx = new Graphics();
   private readonly highlightGfx = new Graphics();
   private readonly menu = new ActionMenu();
@@ -62,13 +66,21 @@ export class BattleScene implements Scene {
 
   constructor(
     private readonly app: Application,
+    private readonly textures: TileTextures,
     private readonly onRestart: () => void,
   ) {}
 
   enter(): void {
-    this.container.addChild(this.bg, this.gridGfx, this.highlightGfx);
+    this.container.addChild(
+      this.bg,
+      this.tileLayer,
+      this.gridGfx,
+      this.highlightGfx,
+    );
 
-    this.fighters = [...partyStats, ...enemyStats].map((s) => new Fighter(s));
+    this.fighters = [...partyStats, ...enemyStats].map(
+      (s) => new Fighter(s, this.textures[tileTextureId(s.sprite)]),
+    );
     for (const f of this.fighters) this.container.addChild(f);
 
     this.orderPanel = new TurnOrderPanel(this.fighters);
@@ -117,21 +129,16 @@ export class BattleScene implements Scene {
       Math.max(48, (height - gridH) / 2 - 16),
     );
 
+    this.buildTileSprites();
+
     this.gridGfx.clear();
     for (let y = 0; y < GRID_ROWS; y++) {
       for (let x = 0; x < GRID_COLS; x++) {
         const px = this.origin.x + x * TILE_SIZE;
         const py = this.origin.y + y * TILE_SIZE;
-        const obstacle = this.isObstacle({ x, y });
         this.gridGfx
           .rect(px, py, TILE_SIZE, TILE_SIZE)
-          .fill(obstacle ? 0x3a3a52 : (x + y) % 2 === 0 ? 0x232338 : 0x1d1d2e)
-          .stroke({ width: 1, color: 0x34345a });
-        if (obstacle) {
-          this.gridGfx
-            .roundRect(px + 14, py + 18, TILE_SIZE - 28, TILE_SIZE - 34, 8)
-            .fill(0x55556e);
-        }
+          .stroke({ width: 1, color: 0x00000088 });
       }
     }
 
@@ -145,6 +152,38 @@ export class BattleScene implements Scene {
     this.container.hitArea = new Rectangle(0, 0, width, height);
     this.drawHighlights();
   };
+
+  private buildTileSprites(): void {
+    for (const child of this.tileLayer.removeChildren()) child.destroy();
+
+    const scale = TILE_SIZE / TILE_PX;
+    for (let y = 0; y < GRID_ROWS; y++) {
+      for (let x = 0; x < GRID_COLS; x++) {
+        const obstacle = this.isObstacle({ x, y });
+        const debris =
+          TILE_INDEX.floorDebris[
+            (x * 3 + y * 5) % TILE_INDEX.floorDebris.length
+          ];
+        const index = obstacle
+          ? (x + y) % 2 === 0
+            ? TILE_INDEX.rock
+            : TILE_INDEX.rockAlt
+          : (x + y) % 4 === 0
+            ? debris
+            : TILE_INDEX.floor;
+        const texture = this.textures[tileTextureId(index)];
+        if (!texture) continue;
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(0.5);
+        sprite.scale.set(scale);
+        sprite.position.set(
+          this.origin.x + (x + 0.5) * TILE_SIZE,
+          this.origin.y + (y + 0.5) * TILE_SIZE,
+        );
+        this.tileLayer.addChild(sprite);
+      }
+    }
+  }
 
   private readonly update = (t: Ticker): void => {
     this.orderPanel.refresh();
