@@ -72,6 +72,6 @@ src/
 
 Choose **Explore** on the selection screen to walk the hero freely around
 the town map (hold WASD or arrow keys; rocks and the map edge block movement
-via tile collision). The ground is a continuous surface with no tile grid;
-only obstacle tiles from the town tilemap are drawn. Press **Esc** to return
-to the selection screen. The map layout lives in `src/data/explore.ts`.
+via tile collision). Press **Esc** to return to the selection screen. The
+map layout lives in `src/data/explore.ts` and uses tiles from the town
+tilemap.

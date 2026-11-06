@@ -21,7 +21,6 @@ import type { Scene } from "../game/Scene";
 
 const SPEED_PX_PER_MS = 0.18;
 const PLAYER_RADIUS = 12;
-const GROUND_COLOR = 0x8b4513;
 
 const MOVE_KEYS = new Set([
   "ArrowUp",
@@ -96,7 +95,6 @@ export class ExploreScene implements Scene {
       Math.max(16, (width - mapW) / 2),
       Math.max(48, (height - mapH) / 2 - 16),
     );
-    this.bg.rect(this.origin.x, this.origin.y, mapW, mapH).fill(GROUND_COLOR);
 
     this.buildTileSprites();
     this.positionPlayer();
@@ -111,7 +109,6 @@ export class ExploreScene implements Scene {
     const scale = EXPLORE_TILE_SIZE / TILE_PX;
     for (let y = 0; y < EXPLORE_ROWS; y++) {
       for (let x = 0; x < EXPLORE_COLS; x++) {
-        if (!isExploreBlocked(x, y)) continue;
         const index = exploreTileIndex(x, y);
         if (index === null) continue;
         const texture = this.textures[tileTextureId(index)];
