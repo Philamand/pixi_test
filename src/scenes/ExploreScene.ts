@@ -16,9 +16,11 @@ import {
 } from "../assets";
 import {
   EXPLORE_COLS,
+  EXPLORE_LAYOUT,
   EXPLORE_ROWS,
   EXPLORE_SPAWN,
   EXPLORE_TILE_SIZE,
+  exploreGrassKey,
   exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
@@ -137,22 +139,28 @@ export class ExploreScene implements Scene {
 
     for (let y = 0; y < EXPLORE_ROWS; y++) {
       for (let x = 0; x < EXPLORE_COLS; x++) {
+        const char = EXPLORE_LAYOUT[y][x];
+        if (char !== "." && char !== ",") {
+          this.addTileSprite(exploreGrassKey(x, y), x, y);
+        }
         const key = exploreTileKey(x, y);
         if (key === null) continue;
-        const texture = this.ground[key];
-        if (!texture) continue;
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.5);
-        sprite.scale.set(
-          this.tileSize / Math.max(texture.width, texture.height),
-        );
-        sprite.position.set(
-          this.origin.x + (x + 0.5) * this.tileSize,
-          this.origin.y + (y + 0.5) * this.tileSize,
-        );
-        this.tileLayer.addChild(sprite);
+        this.addTileSprite(key, x, y);
       }
     }
+  }
+
+  private addTileSprite(key: string, x: number, y: number): void {
+    const texture = this.ground[key];
+    if (!texture) return;
+    const sprite = new Sprite(texture);
+    sprite.anchor.set(0.5);
+    sprite.scale.set(this.tileSize / Math.max(texture.width, texture.height));
+    sprite.position.set(
+      this.origin.x + (x + 0.5) * this.tileSize,
+      this.origin.y + (y + 0.5) * this.tileSize,
+    );
+    this.tileLayer.addChild(sprite);
   }
 
   private readonly onKeyDown = (e: KeyboardEvent): void => {

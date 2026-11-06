@@ -41,6 +41,12 @@ const LEGEND: Record<string, readonly string[]> = {
 
 const BLOCKED = new Set(["T", "t", "W", "#", "F", "r"]);
 
+const GRASS_OPTIONS = LEGEND["."];
+
+export function exploreGrassKey(x: number, y: number): string {
+  return GRASS_OPTIONS[(x * 3 + y * 5) % GRASS_OPTIONS.length];
+}
+
 export function exploreTileKey(x: number, y: number): string | null {
   if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;
   const options = LEGEND[EXPLORE_LAYOUT[y][x]];
