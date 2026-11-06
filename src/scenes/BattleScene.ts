@@ -151,16 +151,22 @@ export class BattleScene implements Scene {
       this.positionFighter(f);
     }
 
-    const menuScale = Math.min(1, (width - 16) / Math.max(1, this.menu.width));
-    this.menu.scale.set(menuScale);
-    this.menu.position.set(
-      (width - this.menu.width * menuScale) / 2,
-      playH + (MENU_BAR_HEIGHT - this.menu.height * menuScale) / 2,
-    );
+    this.layoutMenu();
     this.banner.position.set(width / 2, playH * 0.12);
     this.container.hitArea = new Rectangle(0, 0, width, height);
     this.drawHighlights();
   };
+
+  private layoutMenu(): void {
+    const { width, height } = this.app.screen;
+    const playH = height - MENU_BAR_HEIGHT;
+    const menuScale = Math.min(1, (width - 16) / Math.max(1, this.menu.width));
+    this.menu.scale.set(menuScale);
+    this.menu.position.set(
+      8,
+      playH + (MENU_BAR_HEIGHT - this.menu.height * menuScale) / 2,
+    );
+  }
 
   private buildTileSprites(): void {
     for (const child of this.tileLayer.removeChildren()) child.destroy();
@@ -268,6 +274,7 @@ export class BattleScene implements Scene {
       { id: "wait", label: "Wait" },
     ];
     this.menu.show(items, (id) => this.onMenuSelect(id), "horizontal");
+    this.layoutMenu();
   }
 
   private onMenuSelect(id: string): void {
@@ -326,6 +333,7 @@ export class BattleScene implements Scene {
       },
       "horizontal",
     );
+    this.layoutMenu();
   }
 
   private beginTargeting(skill: Skill | null): void {
