@@ -22,6 +22,7 @@ src/
 │   ├── Scene.ts          # Scene interface (enter/exit + container)
 │   └── SceneManager.ts   # Switches between scenes, disposes the old one
 ├── scenes/
+│   ├── SelectionScene.ts # Mode selection screen (Combat / Explore)
 │   └── BattleScene.ts    # The tactical battle: grid, turn flow, input, enemy AI
 ├── entities/
 │   └── Fighter.ts        # Combatant model + view (HP/MP/CT bars, facing, skills)
