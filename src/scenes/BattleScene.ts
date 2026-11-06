@@ -229,12 +229,17 @@ export class BattleScene implements Scene {
       if (target && this.targetUnits.includes(target)) {
         void this.resolveAction(target);
       } else {
-        this.selecting = "none";
-        this.showMainMenu();
+        this.cancelTargeting();
         this.drawHighlights();
       }
     }
   };
+
+  private cancelTargeting(): void {
+    this.selecting = "none";
+    this.targetUnits = [];
+    this.pendingSkill = null;
+  }
 
   private readonly onPointerMove = (e: FederatedPointerEvent): void => {
     const tile = this.toTile(e.global);
@@ -256,15 +261,30 @@ export class BattleScene implements Scene {
 
   private onMenuSelect(id: string): void {
     if (!this.active || this.phase !== "menu") return;
+    const abortingAttack =
+      id === "attack" && this.selecting === "target" && !this.pendingSkill;
+    if (this.selecting === "target") this.cancelTargeting();
     switch (id) {
       case "move":
-        this.selecting = "move";
-        this.computeMoveTiles();
-        this.log.add("Choose a destination tile.");
-        this.drawHighlights();
+        if (this.selecting === "move") {
+          this.selecting = "none";
+          this.moveTiles = [];
+          this.log.add("Move cancelled.");
+          this.drawHighlights();
+        } else {
+          this.selecting = "move";
+          this.computeMoveTiles();
+          this.log.add("Choose a destination tile.");
+          this.drawHighlights();
+        }
         break;
       case "attack":
-        this.beginTargeting(null);
+        if (abortingAttack) {
+          this.log.add("Attack cancelled.");
+          this.drawHighlights();
+        } else {
+          this.beginTargeting(null);
+        }
         break;
       case "skill":
         this.showSkillMenu();
@@ -285,7 +305,7 @@ export class BattleScene implements Scene {
       disabled: f.mp < s.mpCost,
     }));
     items.push({ id: "back", label: "Back" });
-    this.selecting = "none";
+    this.cancelTargeting();
     this.menu.show(items, (id) => {
       if (!this.active) return;
       if (id === "back") {
@@ -312,7 +332,7 @@ export class BattleScene implements Scene {
     }
     this.pendingSkill = skill;
     this.selecting = "target";
-    this.menu.hide();
+    this.showMainMenu();
     this.log.add(
       skill ? `Choose a target for ${skill.name}.` : "Choose a target.",
     );
