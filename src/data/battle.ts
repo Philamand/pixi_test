@@ -1,5 +1,5 @@
 import type { FighterStats } from "../entities/Fighter";
-import { DUNGEON_CHARACTER } from "./tiles";
+import { SPRITE_SET } from "./tiles";
 import type { Tile } from "../utils/grid";
 
 export const GRID_COLS = 8;
@@ -27,7 +27,7 @@ export const partyStats: FighterStats[] = [
     range: 1,
     color: 0x4a9eff,
     spawn: { x: 0, y: 2 },
-    sprite: DUNGEON_CHARACTER.hero,
+    sprites: SPRITE_SET.assassin,
     skills: [
       {
         id: "power-strike",
@@ -50,7 +50,7 @@ export const partyStats: FighterStats[] = [
     range: 1,
     color: 0xb06ae0,
     spawn: { x: 0, y: 4 },
-    sprite: DUNGEON_CHARACTER.mage,
+    sprites: SPRITE_SET.assassin,
     skills: [
       {
         id: "fire",
@@ -74,36 +74,6 @@ export const partyStats: FighterStats[] = [
 
 export const enemyStats: FighterStats[] = [
   {
-    name: "Slime",
-    team: "enemy",
-    maxHp: 30,
-    attack: 9,
-    defense: 2,
-    speed: 5,
-    maxMp: 0,
-    move: 2,
-    range: 1,
-    color: 0x59c24f,
-    spawn: { x: 7, y: 1 },
-    sprite: DUNGEON_CHARACTER.slime,
-    skills: [],
-  },
-  {
-    name: "Bat",
-    team: "enemy",
-    maxHp: 24,
-    attack: 11,
-    defense: 1,
-    speed: 7,
-    maxMp: 0,
-    move: 4,
-    range: 1,
-    color: 0x8a6ad0,
-    spawn: { x: 7, y: 3 },
-    sprite: DUNGEON_CHARACTER.bat,
-    skills: [],
-  },
-  {
     name: "Goblin",
     team: "enemy",
     maxHp: 26,
@@ -114,8 +84,38 @@ export const enemyStats: FighterStats[] = [
     move: 3,
     range: 1,
     color: 0x7ac24f,
+    spawn: { x: 7, y: 1 },
+    sprites: SPRITE_SET.goblin,
+    skills: [],
+  },
+  {
+    name: "Goblin 2",
+    team: "enemy",
+    maxHp: 24,
+    attack: 11,
+    defense: 1,
+    speed: 7,
+    maxMp: 0,
+    move: 4,
+    range: 1,
+    color: 0x9ac24f,
+    spawn: { x: 7, y: 3 },
+    sprites: SPRITE_SET.goblin,
+    skills: [],
+  },
+  {
+    name: "Chief Goblin",
+    team: "enemy",
+    maxHp: 40,
+    attack: 13,
+    defense: 2,
+    speed: 5,
+    maxMp: 0,
+    move: 3,
+    range: 1,
+    color: 0xc24f4f,
     spawn: { x: 6, y: 4 },
-    sprite: DUNGEON_CHARACTER.goblin,
+    sprites: SPRITE_SET.chiefGoblin,
     skills: [],
   },
 ];

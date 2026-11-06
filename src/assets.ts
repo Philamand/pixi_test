@@ -1,27 +1,21 @@
 import { Assets, Spritesheet, type Texture } from "pixi.js";
-import dungeonTilemapUrl from "../assets/tiny_dungeon_tilemap.png";
-import {
-  CHARACTER_PX,
-  SHEET_COLS,
-  SHEET_PITCH,
-  SHEET_ROWS,
-  tileTextureId,
-} from "./data/tiles";
+import { SPRITE_SET, type SpriteSetName } from "./data/tiles";
 import type { Facing } from "./utils/grid";
 
 export type TileTextures = Record<string, Texture>;
 
 export const SPRITE_FRAME_PX = 480;
 
-export type SpriteAnimations = Record<
-  Facing,
-  { idle: Texture[]; walk: Texture[] }
->;
+export type SpriteState = "idle" | "walk" | "attack" | "hurt";
+
+export type CharacterSprites = {
+  directions: Record<Facing, Record<SpriteState, Texture[]>>;
+  dying: Texture[];
+};
 
 export interface TilemapSet {
   summer: TileTextures;
-  characters: TileTextures;
-  assassin: SpriteAnimations;
+  sprites: Record<SpriteSetName, CharacterSprites>;
 }
 
 const summerTileUrls = import.meta.glob<string>(
@@ -51,32 +45,16 @@ async function loadSummerTiles(): Promise<TileTextures> {
   return Object.fromEntries(entries);
 }
 
-async function sliceDungeonTilemap(url: string): Promise<TileTextures> {
-  const texture = await Assets.load<Texture>(url);
-  texture.source.scaleMode = "nearest";
+const SPRITE_FOLDERS = Object.values(SPRITE_SET);
 
-  const frames: Record<
-    string,
-    { frame: { x: number; y: number; w: number; h: number } }
-  > = {};
-  for (let i = 0; i < SHEET_COLS * SHEET_ROWS; i++) {
-    frames[tileTextureId(i)] = {
-      frame: {
-        x: (i % SHEET_COLS) * SHEET_PITCH,
-        y: Math.floor(i / SHEET_COLS) * SHEET_PITCH,
-        w: CHARACTER_PX,
-        h: CHARACTER_PX,
-      },
-    };
-  }
-
-  const sheet = new Spritesheet({
-    texture,
-    data: { frames, meta: { scale: "1" } },
-  });
-  await sheet.parse();
-  return sheet.textures;
-}
+const spriteSheetUrls = import.meta.glob<string>(
+  "../assets/sprites/{assassin,goblin,chief_goblin}/* - {Idle,Walking,Attacking,Hurt}.png",
+  { eager: true, query: "?url", import: "default" },
+);
+const spriteDyingUrls = import.meta.glob<string>(
+  "../assets/sprites/{assassin,goblin,chief_goblin}/Dying.png",
+  { eager: true, query: "?url", import: "default" },
+);
 
 const SPRITE_DIRECTION: Record<string, Facing> = {
   front: "down",
@@ -85,14 +63,12 @@ const SPRITE_DIRECTION: Record<string, Facing> = {
   right: "right",
 };
 
-const assassinIdleUrls = import.meta.glob<string>(
-  "../assets/sprites/assassin/* - Idle.png",
-  { eager: true, query: "?url", import: "default" },
-);
-const assassinWalkUrls = import.meta.glob<string>(
-  "../assets/sprites/assassin/* - Walking.png",
-  { eager: true, query: "?url", import: "default" },
-);
+const SPRITE_STATE_FILE: Record<SpriteState, string> = {
+  idle: "Idle",
+  walk: "Walking",
+  attack: "Attacking",
+  hurt: "Hurt",
+};
 
 async function sliceSpriteSheet(url: string): Promise<Texture[]> {
   const texture = await Assets.load<Texture>(url);
@@ -126,30 +102,46 @@ async function sliceSpriteSheet(url: string): Promise<Texture[]> {
   return textures;
 }
 
-async function loadAssassinAnimations(): Promise<SpriteAnimations> {
-  const anims = {} as SpriteAnimations;
+async function loadCharacterSprites(
+  folder: SpriteSetName,
+): Promise<CharacterSprites> {
+  const directions = {} as CharacterSprites["directions"];
   await Promise.all(
     Object.entries(SPRITE_DIRECTION).map(async ([dir, facing]) => {
       const name = dir[0].toUpperCase() + dir.slice(1);
-      const [idle, walk] = await Promise.all([
-        sliceSpriteSheet(
-          assassinIdleUrls[`../assets/sprites/assassin/${name} - Idle.png`],
-        ),
-        sliceSpriteSheet(
-          assassinWalkUrls[`../assets/sprites/assassin/${name} - Walking.png`],
-        ),
-      ]);
-      anims[facing] = { idle, walk };
+      const states = {} as CharacterSprites["directions"][Facing];
+      await Promise.all(
+        (Object.keys(SPRITE_STATE_FILE) as SpriteState[]).map(async (state) => {
+          states[state] = await sliceSpriteSheet(
+            spriteSheetUrls[
+              `../assets/sprites/${folder}/${name} - ${SPRITE_STATE_FILE[state]}.png`
+            ],
+          );
+        }),
+      );
+      directions[facing] = states;
     }),
   );
-  return anims;
+  const dying = await sliceSpriteSheet(
+    spriteDyingUrls[`../assets/sprites/${folder}/Dying.png`],
+  );
+  return { directions, dying };
+}
+
+async function loadSprites(): Promise<TilemapSet["sprites"]> {
+  const out = {} as TilemapSet["sprites"];
+  await Promise.all(
+    SPRITE_FOLDERS.map(async (folder) => {
+      out[folder] = await loadCharacterSprites(folder);
+    }),
+  );
+  return out;
 }
 
 export async function loadTilemaps(): Promise<TilemapSet> {
-  const [summer, characters, assassin] = await Promise.all([
+  const [summer, sprites] = await Promise.all([
     loadSummerTiles(),
-    sliceDungeonTilemap(dungeonTilemapUrl),
-    loadAssassinAnimations(),
+    loadSprites(),
   ]);
-  return { summer, characters, assassin };
+  return { summer, sprites };
 }
