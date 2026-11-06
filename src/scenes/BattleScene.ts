@@ -258,10 +258,17 @@ export class BattleScene implements Scene {
     if (!this.active || this.phase !== "menu") return;
     switch (id) {
       case "move":
-        this.selecting = "move";
-        this.computeMoveTiles();
-        this.log.add("Choose a destination tile.");
-        this.drawHighlights();
+        if (this.selecting === "move") {
+          this.selecting = "none";
+          this.moveTiles = [];
+          this.log.add("Move cancelled.");
+          this.drawHighlights();
+        } else {
+          this.selecting = "move";
+          this.computeMoveTiles();
+          this.log.add("Choose a destination tile.");
+          this.drawHighlights();
+        }
         break;
       case "attack":
         this.beginTargeting(null);

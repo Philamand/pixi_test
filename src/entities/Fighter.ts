@@ -106,6 +106,7 @@ export class Fighter extends Container {
   takeDamage(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
     this.healthBar.setHp(this.hp);
+    if (!this.isAlive) this.visible = false;
   }
 
   heal(amount: number): number {
