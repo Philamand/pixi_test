@@ -1,7 +1,8 @@
 import type { Application } from "pixi.js";
-import type { TileTextures } from "../assets";
+import type { TilemapSet } from "../assets";
 import { BattleScene } from "../scenes/BattleScene";
-import { SelectionScene } from "../scenes/SelectionScene";
+import { ExploreScene } from "../scenes/ExploreScene";
+import { SelectionScene, type SelectionMode } from "../scenes/SelectionScene";
 import { SceneManager } from "./SceneManager";
 
 export class Game {
@@ -9,20 +10,36 @@ export class Game {
 
   constructor(
     readonly app: Application,
-    private readonly textures: TileTextures,
+    private readonly tilemaps: TilemapSet,
   ) {
     this.scenes = new SceneManager(app);
   }
 
   start(): void {
     this.scenes.switchTo(
-      new SelectionScene(this.app, () => this.startBattle()),
+      new SelectionScene(this.app, (mode) => this.startMode(mode)),
     );
+  }
+
+  private startMode(mode: SelectionMode): void {
+    if (mode === "combat") {
+      this.startBattle();
+    } else {
+      this.startExplore();
+    }
   }
 
   private startBattle(): void {
     this.scenes.switchTo(
-      new BattleScene(this.app, this.textures, () => this.startBattle()),
+      new BattleScene(this.app, this.tilemaps.dungeon, () =>
+        this.startBattle(),
+      ),
+    );
+  }
+
+  private startExplore(): void {
+    this.scenes.switchTo(
+      new ExploreScene(this.app, this.tilemaps.town, () => this.start()),
     );
   }
 }
