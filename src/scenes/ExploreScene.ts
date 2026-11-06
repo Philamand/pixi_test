@@ -13,10 +13,10 @@ import {
   EXPLORE_ROWS,
   EXPLORE_SPAWN,
   EXPLORE_TILE_SIZE,
-  exploreTileIndex,
+  exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
-import { TILE_PX, TOWN_TILE, tileTextureId } from "../data/tiles";
+import { CHARACTER_PX, DUNGEON_CHARACTER, tileTextureId } from "../data/tiles";
 import type { Scene } from "../game/Scene";
 
 const SPEED_PX_PER_MS = 0.18;
@@ -57,10 +57,11 @@ export class ExploreScene implements Scene {
 
   constructor(
     private readonly app: Application,
-    private readonly textures: TileTextures,
+    private readonly ground: TileTextures,
+    characters: TileTextures,
     private readonly onExit: () => void,
   ) {
-    this.player = new Sprite(textures[tileTextureId(TOWN_TILE.hero)]);
+    this.player = new Sprite(characters[tileTextureId(DUNGEON_CHARACTER.hero)]);
     this.player.anchor.set(0.5);
   }
 
@@ -106,16 +107,17 @@ export class ExploreScene implements Scene {
   private buildTileSprites(): void {
     for (const child of this.tileLayer.removeChildren()) child.destroy();
 
-    const scale = EXPLORE_TILE_SIZE / TILE_PX;
     for (let y = 0; y < EXPLORE_ROWS; y++) {
       for (let x = 0; x < EXPLORE_COLS; x++) {
-        const index = exploreTileIndex(x, y);
-        if (index === null) continue;
-        const texture = this.textures[tileTextureId(index)];
+        const key = exploreTileKey(x, y);
+        if (key === null) continue;
+        const texture = this.ground[key];
         if (!texture) continue;
         const sprite = new Sprite(texture);
         sprite.anchor.set(0.5);
-        sprite.scale.set(scale);
+        sprite.scale.set(
+          EXPLORE_TILE_SIZE / Math.max(texture.width, texture.height),
+        );
         sprite.position.set(
           this.origin.x + (x + 0.5) * EXPLORE_TILE_SIZE,
           this.origin.y + (y + 0.5) * EXPLORE_TILE_SIZE,
@@ -196,7 +198,7 @@ export class ExploreScene implements Scene {
   }
 
   private positionPlayer(): void {
-    this.player.scale.set(EXPLORE_TILE_SIZE / TILE_PX);
+    this.player.scale.set(EXPLORE_TILE_SIZE / CHARACTER_PX);
     this.player.position.set(
       this.origin.x + this.playerOffset.x,
       this.origin.y + this.playerOffset.y,

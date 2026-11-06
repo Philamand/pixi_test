@@ -23,7 +23,7 @@ src/
 │   └── SceneManager.ts   # Switches between scenes, disposes the old one
 ├── scenes/
 │   ├── SelectionScene.ts # Mode selection screen (Combat / Explore)
-│   ├── ExploreScene.ts   # Overworld exploration: walk the town map (WASD/arrows)
+│   ├── ExploreScene.ts   # Overworld exploration: walk the summer map (WASD/arrows)
 │   └── BattleScene.ts    # The tactical battle: grid, turn flow, input, enemy AI
 ├── entities/
 │   └── Fighter.ts        # Combatant model + view (HP/MP/CT bars, facing, skills)
@@ -36,7 +36,7 @@ src/
 │   └── BattleLog.ts      # Scrolling message log
 ├── data/
 │   ├── battle.ts         # Grid config, party/enemy stats, skills, tuning constants
-│   └── explore.ts        # Exploration map layout (town tilemap) and spawn
+│   └── explore.ts        # Exploration map layout (Simple Summer tiles) and spawn
 └── utils/
     ├── grid.ts           # Tiles, Chebyshev distance, range queries, facing
     └── tween.ts          # Tiny ticker-based tween helper (delays, lunges)
@@ -63,16 +63,17 @@ src/
 - Tune the grid, obstacles, units, and skills in `src/data/battle.ts`.
 - Add new scenes (title screen, map, shop) by implementing the `Scene`
   interface and calling `sceneManager.switchTo(...)` from `Game`.
-- The Kenney Tiny Dungeon (`assets/tiny_dungeon_tilemap.png`) and Tiny Town
-  (`assets/tiny_town_tilemap.png`) tilemaps are sliced into 16x16 frames by
-  `src/assets.ts`. Battle tile/fighter indices live in `TILE_INDEX`, town
-  tiles in `TOWN_TILE` (both in `src/data/tiles.ts`); the two sheets have
-  different layouts, so don't mix their indices.
+- Ground and prop tiles come from the Simple Summer set as individual PNGs
+  in `assets/tiles/simple_summer/`, loaded by `src/assets.ts` and keyed by
+  file name (e.g. `ground_05`, `prop_tree_medium`; see `SUMMER_TILE` in
+  `src/data/tiles.ts`). Characters still use the Kenney Tiny Dungeon
+  tilemap (`assets/tiny_dungeon_tilemap.png`), sliced into 16x16 frames by
+  `src/assets.ts`; character indices live in `DUNGEON_CHARACTER`.
 
 ## Exploration
 
 Choose **Explore** on the selection screen to walk the hero freely around
-the town map (hold WASD or arrow keys; trees, water, houses, fences, rocks
+the summer map (hold WASD or arrow keys; trees, ponds, fences, rocks
 and the map edge block movement via tile collision). Press **Esc** to return
 to the selection screen. The map layout lives in `src/data/explore.ts` and
-uses `TOWN_TILE` indices from the town tilemap.
+uses `SUMMER_TILE` keys from the Simple Summer tiles.

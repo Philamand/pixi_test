@@ -19,7 +19,7 @@ import {
   partyStats,
   TILE_SIZE,
 } from "../data/battle";
-import { TILE_INDEX, TILE_PX, tileTextureId } from "../data/tiles";
+import { SUMMER_TILE, tileTextureId } from "../data/tiles";
 import { Fighter, type Skill } from "../entities/Fighter";
 import type { Scene } from "../game/Scene";
 import { TurnManager } from "../systems/TurnManager";
@@ -66,7 +66,8 @@ export class BattleScene implements Scene {
 
   constructor(
     private readonly app: Application,
-    private readonly textures: TileTextures,
+    private readonly ground: TileTextures,
+    private readonly characters: TileTextures,
     private readonly onRestart: () => void,
   ) {}
 
@@ -79,7 +80,7 @@ export class BattleScene implements Scene {
     );
 
     this.fighters = [...partyStats, ...enemyStats].map(
-      (s) => new Fighter(s, this.textures[tileTextureId(s.sprite)]),
+      (s) => new Fighter(s, this.characters[tileTextureId(s.sprite)]),
     );
     for (const f of this.fighters) this.container.addChild(f);
 
@@ -156,23 +157,24 @@ export class BattleScene implements Scene {
   private buildTileSprites(): void {
     for (const child of this.tileLayer.removeChildren()) child.destroy();
 
-    const scale = TILE_SIZE / TILE_PX;
     for (let y = 0; y < GRID_ROWS; y++) {
       for (let x = 0; x < GRID_COLS; x++) {
         const obstacle = this.isObstacle({ x, y });
         const debris =
-          TILE_INDEX.floorDebris[
-            (x * 3 + y * 5) % TILE_INDEX.floorDebris.length
+          SUMMER_TILE.grassDebris[
+            (x * 3 + y * 5) % SUMMER_TILE.grassDebris.length
           ];
-        const rock = (x + y) % 2 === 0 ? TILE_INDEX.rock : TILE_INDEX.rockAlt;
-        const floor = (x + y) % 4 === 0 ? debris : TILE_INDEX.floor;
-        const indices = obstacle ? [TILE_INDEX.floor, rock] : [floor];
-        for (const index of indices) {
-          const texture = this.textures[tileTextureId(index)];
+        const rock = (x + y) % 2 === 0 ? SUMMER_TILE.rock : SUMMER_TILE.rockAlt;
+        const base =
+          (x + y * 2) % 3 === 0 ? SUMMER_TILE.grassAlt : SUMMER_TILE.grass;
+        const floor = (x + y) % 4 === 0 ? debris : base;
+        const keys = obstacle ? [SUMMER_TILE.grass, rock] : [floor];
+        for (const key of keys) {
+          const texture = this.ground[key];
           if (!texture) continue;
           const sprite = new Sprite(texture);
           sprite.anchor.set(0.5);
-          sprite.scale.set(scale);
+          sprite.scale.set(TILE_SIZE / Math.max(texture.width, texture.height));
           sprite.position.set(
             this.origin.x + (x + 0.5) * TILE_SIZE,
             this.origin.y + (y + 0.5) * TILE_SIZE,

@@ -1,5 +1,5 @@
 import type { FighterStats } from "../entities/Fighter";
-import { TILE_INDEX } from "./tiles";
+import { DUNGEON_CHARACTER } from "./tiles";
 import type { Tile } from "../utils/grid";
 
 export const GRID_COLS = 8;
@@ -27,7 +27,7 @@ export const partyStats: FighterStats[] = [
     range: 1,
     color: 0x4a9eff,
     spawn: { x: 0, y: 2 },
-    sprite: TILE_INDEX.hero,
+    sprite: DUNGEON_CHARACTER.hero,
     skills: [
       {
         id: "power-strike",
@@ -50,7 +50,7 @@ export const partyStats: FighterStats[] = [
     range: 1,
     color: 0xb06ae0,
     spawn: { x: 0, y: 4 },
-    sprite: TILE_INDEX.mage,
+    sprite: DUNGEON_CHARACTER.mage,
     skills: [
       {
         id: "fire",
@@ -85,7 +85,7 @@ export const enemyStats: FighterStats[] = [
     range: 1,
     color: 0x59c24f,
     spawn: { x: 7, y: 1 },
-    sprite: TILE_INDEX.slime,
+    sprite: DUNGEON_CHARACTER.slime,
     skills: [],
   },
   {
@@ -100,7 +100,7 @@ export const enemyStats: FighterStats[] = [
     range: 1,
     color: 0x8a6ad0,
     spawn: { x: 7, y: 3 },
-    sprite: TILE_INDEX.bat,
+    sprite: DUNGEON_CHARACTER.bat,
     skills: [],
   },
   {
@@ -115,7 +115,7 @@ export const enemyStats: FighterStats[] = [
     range: 1,
     color: 0x7ac24f,
     spawn: { x: 6, y: 4 },
-    sprite: TILE_INDEX.goblin,
+    sprite: DUNGEON_CHARACTER.goblin,
     skills: [],
   },
 ];
