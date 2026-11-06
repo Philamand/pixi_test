@@ -2,12 +2,12 @@ import type { FighterStats } from "../entities/Fighter";
 import { SPRITE_SET } from "./tiles";
 import type { Tile } from "../utils/grid";
 
-export const GRID_COLS = 8;
-export const GRID_ROWS = 6;
+export const GRID_COLS = 6;
+export const GRID_ROWS = 8;
 export const TILE_SIZE = 72;
 export const OBSTACLES: Tile[] = [
-  { x: 3, y: 1 },
-  { x: 4, y: 4 },
+  { x: 2, y: 3 },
+  { x: 3, y: 5 },
 ];
 
 export const MAX_CT = 100;
@@ -26,7 +26,7 @@ export const partyStats: FighterStats[] = [
     move: 3,
     range: 1,
     color: 0x4a9eff,
-    spawn: { x: 0, y: 2 },
+    spawn: { x: 1, y: 6 },
     sprites: SPRITE_SET.assassin,
     skills: [
       {
@@ -49,7 +49,7 @@ export const partyStats: FighterStats[] = [
     move: 3,
     range: 1,
     color: 0xb06ae0,
-    spawn: { x: 0, y: 4 },
+    spawn: { x: 4, y: 6 },
     sprites: SPRITE_SET.assassin,
     skills: [
       {
@@ -84,7 +84,7 @@ export const enemyStats: FighterStats[] = [
     move: 3,
     range: 1,
     color: 0x7ac24f,
-    spawn: { x: 7, y: 1 },
+    spawn: { x: 1, y: 1 },
     sprites: SPRITE_SET.goblin,
     skills: [],
   },
@@ -99,7 +99,7 @@ export const enemyStats: FighterStats[] = [
     move: 4,
     range: 1,
     color: 0x9ac24f,
-    spawn: { x: 7, y: 3 },
+    spawn: { x: 4, y: 1 },
     sprites: SPRITE_SET.goblin,
     skills: [],
   },
@@ -114,7 +114,7 @@ export const enemyStats: FighterStats[] = [
     move: 3,
     range: 1,
     color: 0xc24f4f,
-    spawn: { x: 6, y: 4 },
+    spawn: { x: 2, y: 2 },
     sprites: SPRITE_SET.chiefGoblin,
     skills: [],
   },

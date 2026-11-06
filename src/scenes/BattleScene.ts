@@ -147,7 +147,7 @@ export class BattleScene implements Scene {
     }
 
     for (const f of this.fighters) {
-      f.scale.set(this.tileH / TILE_SIZE);
+      f.scale.set(this.tileW / TILE_SIZE, this.tileH / TILE_SIZE);
       this.positionFighter(f);
     }
 
