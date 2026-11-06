@@ -18,6 +18,7 @@ export interface TilemapSet {
 
 async function sliceTilemap(url: string): Promise<TileTextures> {
   const texture = await Assets.load<Texture>(url);
+  texture.source.scaleMode = "nearest";
 
   const frames: Record<
     string,
