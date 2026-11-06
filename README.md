@@ -23,6 +23,7 @@ src/
 │   └── SceneManager.ts   # Switches between scenes, disposes the old one
 ├── scenes/
 │   ├── SelectionScene.ts # Mode selection screen (Combat / Explore)
+│   ├── ExploreScene.ts   # Overworld exploration: walk the town map (WASD/arrows)
 │   └── BattleScene.ts    # The tactical battle: grid, turn flow, input, enemy AI
 ├── entities/
 │   └── Fighter.ts        # Combatant model + view (HP/MP/CT bars, facing, skills)
@@ -34,7 +35,8 @@ src/
 │   ├── HealthBar.ts      # Generic bar (HP, MP, CT) with optional fixed color
 │   └── BattleLog.ts      # Scrolling message log
 ├── data/
-│   └── battle.ts         # Grid config, party/enemy stats, skills, tuning constants
+│   ├── battle.ts         # Grid config, party/enemy stats, skills, tuning constants
+│   └── explore.ts        # Exploration map layout (town tilemap) and spawn
 └── utils/
     ├── grid.ts           # Tiles, Chebyshev distance, range queries, facing
     └── tween.ts          # Tiny ticker-based tween helper (delays, lunges)
@@ -61,6 +63,14 @@ src/
 - Tune the grid, obstacles, units, and skills in `src/data/battle.ts`.
 - Add new scenes (title screen, map, shop) by implementing the `Scene`
   interface and calling `sceneManager.switchTo(...)` from `Game`.
-- The Kenney Tiny Dungeon tilemap (`assets/tiny_dungeon_tilemap.png`) is sliced
-  into 16x16 frames by `src/assets.ts`; tile/fighter indices live in
-  `src/data/tiles.ts`. Add new tiles by extending `TILE_INDEX`.
+- The Kenney Tiny Dungeon (`assets/tiny_dungeon_tilemap.png`) and Tiny Town
+  (`assets/tiny_town_tilemap.png`) tilemaps are sliced into 16x16 frames by
+  `src/assets.ts`; tile/fighter indices live in `src/data/tiles.ts`. Add new
+  tiles by extending `TILE_INDEX`.
+
+## Exploration
+
+Choose **Explore** on the selection screen to walk the hero around the town
+map (WASD or arrow keys, one tile per step; rocks and the map edge block
+movement). Press **Esc** to return to the selection screen. The map layout
+lives in `src/data/explore.ts` and uses tiles from the town tilemap.

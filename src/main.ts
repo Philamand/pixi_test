@@ -1,5 +1,5 @@
 import { Application } from "pixi.js";
-import { loadTilemap } from "./assets";
+import { loadTilemaps } from "./assets";
 import { Game } from "./game/Game";
 
 (async () => {
@@ -9,7 +9,7 @@ import { Game } from "./game/Game";
 
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
-  const textures = await loadTilemap();
-  const game = new Game(app, textures);
+  const tilemaps = await loadTilemaps();
+  const game = new Game(app, tilemaps);
   game.start();
 })();

@@ -1,5 +1,6 @@
 import { Assets, Spritesheet, type Texture } from "pixi.js";
-import tilemapUrl from "../assets/tiny_dungeon_tilemap.png";
+import dungeonTilemapUrl from "../assets/tiny_dungeon_tilemap.png";
+import townTilemapUrl from "../assets/tiny_town_tilemap.png";
 import {
   SHEET_COLS,
   SHEET_PITCH,
@@ -10,8 +11,13 @@ import {
 
 export type TileTextures = Record<string, Texture>;
 
-export async function loadTilemap(): Promise<TileTextures> {
-  const texture = await Assets.load<Texture>(tilemapUrl);
+export interface TilemapSet {
+  dungeon: TileTextures;
+  town: TileTextures;
+}
+
+async function sliceTilemap(url: string): Promise<TileTextures> {
+  const texture = await Assets.load<Texture>(url);
 
   const frames: Record<
     string,
@@ -34,4 +40,12 @@ export async function loadTilemap(): Promise<TileTextures> {
   });
   await sheet.parse();
   return sheet.textures;
+}
+
+export async function loadTilemaps(): Promise<TilemapSet> {
+  const [dungeon, town] = await Promise.all([
+    sliceTilemap(dungeonTilemapUrl),
+    sliceTilemap(townTilemapUrl),
+  ]);
+  return { dungeon, town };
 }
