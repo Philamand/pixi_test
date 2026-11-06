@@ -1,21 +1,21 @@
-import { TILE_INDEX } from "./tiles";
+import { TOWN_TILE } from "./tiles";
 import type { Tile } from "../utils/grid";
 
 export const EXPLORE_TILE_SIZE = 48;
 
 export const EXPLORE_LAYOUT: string[] = [
-  "################",
-  "#......,.......#",
-  "#..T.......T...#",
-  "#..............#",
-  "#......##......#",
-  "#......##......#",
-  "#..............#",
-  "#...T......T,..#",
-  "#..............#",
-  "#......##......#",
-  "#......,.......#",
-  "################",
+  "TTTTTTTTTTTTTTTT",
+  "T......WW......T",
+  "T..t...WW......T",
+  "T......WW...t..T",
+  "T,,,,,,,,,,,,,.T",
+  "T.........###..T",
+  "T..t......###..T",
+  "T,,,,,,,,,,,,,.T",
+  "T..b...r.......T",
+  "T....t....r..b.T",
+  "T......FF......T",
+  "TTTTTTTTTTTTTTTT",
 ];
 
 export const EXPLORE_COLS = EXPLORE_LAYOUT[0].length;
@@ -24,13 +24,18 @@ export const EXPLORE_ROWS = EXPLORE_LAYOUT.length;
 export const EXPLORE_SPAWN: Tile = { x: 7, y: 6 };
 
 const LEGEND: Record<string, number> = {
-  "#": TILE_INDEX.rock,
-  T: TILE_INDEX.rockAlt,
-  ".": TILE_INDEX.floor,
-  ",": TILE_INDEX.floorDebris[0],
+  T: TOWN_TILE.tree,
+  t: TOWN_TILE.treeAlt,
+  W: TOWN_TILE.water,
+  "#": TOWN_TILE.wall,
+  F: TOWN_TILE.fence,
+  r: TOWN_TILE.rock,
+  ".": TOWN_TILE.grass,
+  ",": TOWN_TILE.path,
+  b: TOWN_TILE.bush,
 };
 
-const BLOCKED = new Set(["#", "T"]);
+const BLOCKED = new Set(["T", "t", "W", "#", "F", "r"]);
 
 export function exploreTileIndex(x: number, y: number): number | null {
   if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;

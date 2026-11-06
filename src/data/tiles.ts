@@ -15,4 +15,19 @@ export const TILE_INDEX = {
   goblin: 110,
 } as const;
 
+export const TOWN_TILE = {
+  grass: 0,
+  grassAlt: 1,
+  bush: 2,
+  rock: 3,
+  tree: 4,
+  treeAlt: 5,
+  path: 12,
+  water: 48,
+  wall: 72,
+  roof: 52,
+  fence: 32,
+  hero: 104,
+} as const;
+
 export const tileTextureId = (index: number): string => `tile_${index}`;

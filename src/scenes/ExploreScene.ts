@@ -16,7 +16,7 @@ import {
   exploreTileIndex,
   isExploreBlocked,
 } from "../data/explore";
-import { TILE_INDEX, TILE_PX, tileTextureId } from "../data/tiles";
+import { TILE_PX, TOWN_TILE, tileTextureId } from "../data/tiles";
 import type { Scene } from "../game/Scene";
 
 const SPEED_PX_PER_MS = 0.18;
@@ -60,7 +60,7 @@ export class ExploreScene implements Scene {
     private readonly textures: TileTextures,
     private readonly onExit: () => void,
   ) {
-    this.player = new Sprite(textures[tileTextureId(TILE_INDEX.hero)]);
+    this.player = new Sprite(textures[tileTextureId(TOWN_TILE.hero)]);
     this.player.anchor.set(0.5);
   }
 

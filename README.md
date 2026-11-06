@@ -65,13 +65,14 @@ src/
   interface and calling `sceneManager.switchTo(...)` from `Game`.
 - The Kenney Tiny Dungeon (`assets/tiny_dungeon_tilemap.png`) and Tiny Town
   (`assets/tiny_town_tilemap.png`) tilemaps are sliced into 16x16 frames by
-  `src/assets.ts`; tile/fighter indices live in `src/data/tiles.ts`. Add new
-  tiles by extending `TILE_INDEX`.
+  `src/assets.ts`. Battle tile/fighter indices live in `TILE_INDEX`, town
+  tiles in `TOWN_TILE` (both in `src/data/tiles.ts`); the two sheets have
+  different layouts, so don't mix their indices.
 
 ## Exploration
 
 Choose **Explore** on the selection screen to walk the hero freely around
-the town map (hold WASD or arrow keys; rocks and the map edge block movement
-via tile collision). Press **Esc** to return to the selection screen. The
-map layout lives in `src/data/explore.ts` and uses tiles from the town
-tilemap.
+the town map (hold WASD or arrow keys; trees, water, houses, fences, rocks
+and the map edge block movement via tile collision). Press **Esc** to return
+to the selection screen. The map layout lives in `src/data/explore.ts` and
+uses `TOWN_TILE` indices from the town tilemap.
