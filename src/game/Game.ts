@@ -31,15 +31,23 @@ export class Game {
 
   private startBattle(): void {
     this.scenes.switchTo(
-      new BattleScene(this.app, this.tilemaps.dungeon, () =>
-        this.startBattle(),
+      new BattleScene(
+        this.app,
+        this.tilemaps.summer,
+        this.tilemaps.characters,
+        () => this.startBattle(),
       ),
     );
   }
 
   private startExplore(): void {
     this.scenes.switchTo(
-      new ExploreScene(this.app, this.tilemaps.town, () => this.start()),
+      new ExploreScene(
+        this.app,
+        this.tilemaps.summer,
+        this.tilemaps.characters,
+        () => this.start(),
+      ),
     );
   }
 }

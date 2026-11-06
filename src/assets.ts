@@ -1,22 +1,48 @@
 import { Assets, Spritesheet, type Texture } from "pixi.js";
 import dungeonTilemapUrl from "../assets/tiny_dungeon_tilemap.png";
-import townTilemapUrl from "../assets/tiny_town_tilemap.png";
 import {
+  CHARACTER_PX,
   SHEET_COLS,
   SHEET_PITCH,
   SHEET_ROWS,
-  TILE_PX,
   tileTextureId,
 } from "./data/tiles";
 
 export type TileTextures = Record<string, Texture>;
 
 export interface TilemapSet {
-  dungeon: TileTextures;
-  town: TileTextures;
+  summer: TileTextures;
+  characters: TileTextures;
 }
 
-async function sliceTilemap(url: string): Promise<TileTextures> {
+const summerTileUrls = import.meta.glob<string>(
+  "../assets/tiles/simple_summer/*.png",
+  { eager: true, query: "?url", import: "default" },
+);
+
+export function summerTileKey(path: string): string {
+  return path
+    .split("/")
+    .pop()!
+    .replace(/\.png$/i, "")
+    .replace(/^top-down simple summer_?/i, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+async function loadSummerTiles(): Promise<TileTextures> {
+  const entries = await Promise.all(
+    Object.entries(summerTileUrls).map(async ([path, url]) => {
+      const texture = await Assets.load<Texture>(url);
+      texture.source.scaleMode = "nearest";
+      return [summerTileKey(path), texture] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}
+
+async function sliceDungeonTilemap(url: string): Promise<TileTextures> {
   const texture = await Assets.load<Texture>(url);
   texture.source.scaleMode = "nearest";
 
@@ -29,8 +55,8 @@ async function sliceTilemap(url: string): Promise<TileTextures> {
       frame: {
         x: (i % SHEET_COLS) * SHEET_PITCH,
         y: Math.floor(i / SHEET_COLS) * SHEET_PITCH,
-        w: TILE_PX,
-        h: TILE_PX,
+        w: CHARACTER_PX,
+        h: CHARACTER_PX,
       },
     };
   }
@@ -44,9 +70,9 @@ async function sliceTilemap(url: string): Promise<TileTextures> {
 }
 
 export async function loadTilemaps(): Promise<TilemapSet> {
-  const [dungeon, town] = await Promise.all([
-    sliceTilemap(dungeonTilemapUrl),
-    sliceTilemap(townTilemapUrl),
+  const [summer, characters] = await Promise.all([
+    loadSummerTiles(),
+    sliceDungeonTilemap(dungeonTilemapUrl),
   ]);
-  return { dungeon, town };
+  return { summer, characters };
 }

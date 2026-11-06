@@ -1,13 +1,9 @@
 export const SHEET_COLS = 12;
 export const SHEET_ROWS = 11;
 export const SHEET_PITCH = 17;
-export const TILE_PX = 16;
+export const CHARACTER_PX = 16;
 
-export const TILE_INDEX = {
-  floor: 48,
-  floorDebris: [49, 50, 51, 52, 53],
-  rock: 56,
-  rockAlt: 63,
+export const DUNGEON_CHARACTER = {
   hero: 96,
   mage: 84,
   slime: 108,
@@ -15,19 +11,21 @@ export const TILE_INDEX = {
   goblin: 110,
 } as const;
 
-export const TOWN_TILE = {
-  grass: 0,
-  grassAlt: 1,
-  bush: 2,
-  rock: 3,
-  tree: 4,
-  treeAlt: 5,
-  path: 12,
-  water: 48,
-  wall: 72,
-  roof: 52,
-  fence: 32,
-  hero: 104,
-} as const;
-
 export const tileTextureId = (index: number): string => `tile_${index}`;
+
+// Simple Summer tiles are individual PNGs; texture keys are derived from the
+// file names (see summerTileKey in src/assets.ts).
+export const SUMMER_TILE = {
+  grass: "ground_05",
+  grassAlt: "ground_50",
+  grassAlt2: "ground_52",
+  grassDebris: ["ground_40", "ground_43", "ground_48"],
+  sand: "ground_14",
+  pond: ["ground_30", "ground_34", "ground_36"],
+  tree: "prop_tree_medium",
+  treeSmall: "prop_tree_small",
+  bush: "prop_bushes_medium",
+  rock: "prop_rock_01",
+  rockAlt: "prop_rock_02",
+  fence: "prop_wooden_fence_horizontal",
+} as const;

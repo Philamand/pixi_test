@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
 import { MAX_CT, TILE_SIZE } from "../data/battle";
-import { TILE_PX } from "../data/tiles";
+import { CHARACTER_PX } from "../data/tiles";
 import { HealthBar } from "../ui/HealthBar";
 import { facingFromDelta, type Facing, type Tile } from "../utils/grid";
 
@@ -59,7 +59,7 @@ export class Fighter extends Container {
     if (texture) {
       const sprite = new Sprite(texture);
       sprite.anchor.set(0.5);
-      sprite.scale.set((TILE_SIZE * 0.9) / TILE_PX);
+      sprite.scale.set((TILE_SIZE * 0.9) / CHARACTER_PX);
       this.addChild(sprite, this.facingGfx);
     } else {
       this.addChild(
