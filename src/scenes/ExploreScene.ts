@@ -35,7 +35,6 @@ import {
 
 const SPEED_PX_PER_MS = 0.18;
 const MENU_BAR_HEIGHT = 56;
-const MARGIN = 16;
 
 export class ExploreScene implements Scene {
   readonly container = new Container();
@@ -108,10 +107,7 @@ export class ExploreScene implements Scene {
 
     const size = Math.max(
       8,
-      Math.min(
-        (width - MARGIN * 2) / EXPLORE_COLS,
-        (playH - MARGIN * 2) / EXPLORE_ROWS,
-      ),
+      Math.min(width / EXPLORE_COLS, playH / EXPLORE_ROWS),
     );
     const ratio = size / this.tileSize;
     this.tileSize = size;
