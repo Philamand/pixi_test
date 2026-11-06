@@ -1,4 +1,5 @@
 import {
+  AnimatedSprite,
   Application,
   Container,
   Graphics,
@@ -7,7 +8,11 @@ import {
   Text,
   Ticker,
 } from "pixi.js";
-import type { TileTextures } from "../assets";
+import {
+  SPRITE_FRAME_PX,
+  type SpriteAnimations,
+  type TileTextures,
+} from "../assets";
 import {
   EXPLORE_COLS,
   EXPLORE_ROWS,
@@ -16,8 +21,8 @@ import {
   exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
-import { CHARACTER_PX, DUNGEON_CHARACTER, tileTextureId } from "../data/tiles";
 import type { Scene } from "../game/Scene";
+import { facingFromDelta, type Facing } from "../utils/grid";
 
 const SPEED_PX_PER_MS = 0.18;
 const PLAYER_RADIUS = 12;
@@ -42,7 +47,8 @@ export class ExploreScene implements Scene {
 
   private readonly bg = new Graphics();
   private readonly tileLayer = new Container();
-  private readonly player: Sprite;
+  private readonly player: AnimatedSprite;
+  private facing: Facing = "down";
   private readonly hint = new Text({
     text: "WASD / Arrow keys to move — Esc for menu",
     style: { fill: 0xccccdd, fontSize: 14, align: "center" },
@@ -58,11 +64,13 @@ export class ExploreScene implements Scene {
   constructor(
     private readonly app: Application,
     private readonly ground: TileTextures,
-    characters: TileTextures,
+    private readonly animations: SpriteAnimations,
     private readonly onExit: () => void,
   ) {
-    this.player = new Sprite(characters[tileTextureId(DUNGEON_CHARACTER.hero)]);
-    this.player.anchor.set(0.5);
+    this.player = new AnimatedSprite(animations.down.idle);
+    this.player.anchor.set(0.5, 0.8);
+    this.player.animationSpeed = 0.1;
+    this.player.play();
   }
 
   enter(): void {
@@ -157,11 +165,15 @@ export class ExploreScene implements Scene {
       dy -= 1;
     if (this.keys.has("ArrowDown") || this.keys.has("s") || this.keys.has("S"))
       dy += 1;
-    if (dx === 0 && dy === 0) return;
+    if (dx === 0 && dy === 0) {
+      this.setPlayerAnimation(false);
+      return;
+    }
     if (dx !== 0 && dy !== 0) {
       dx *= Math.SQRT1_2;
       dy *= Math.SQRT1_2;
     }
+    this.facing = facingFromDelta(dx, dy);
 
     const step = SPEED_PX_PER_MS * t.deltaMS;
     let absX = this.origin.x + this.playerOffset.x;
@@ -174,7 +186,19 @@ export class ExploreScene implements Scene {
 
     this.playerOffset.set(absX - this.origin.x, absY - this.origin.y);
     this.positionPlayer();
+    this.setPlayerAnimation(true);
   };
+
+  private setPlayerAnimation(moving: boolean): void {
+    const anim = moving
+      ? this.animations[this.facing].walk
+      : this.animations[this.facing].idle;
+    if (this.player.textures !== anim) {
+      this.player.textures = anim;
+      this.player.gotoAndPlay(0);
+    }
+    this.player.animationSpeed = moving ? 0.2 : 0.1;
+  }
 
   private collides(x: number, y: number): boolean {
     const minTx = Math.floor(
@@ -198,7 +222,7 @@ export class ExploreScene implements Scene {
   }
 
   private positionPlayer(): void {
-    this.player.scale.set(EXPLORE_TILE_SIZE / CHARACTER_PX);
+    this.player.scale.set((EXPLORE_TILE_SIZE * 1.5) / SPRITE_FRAME_PX);
     this.player.position.set(
       this.origin.x + this.playerOffset.x,
       this.origin.y + this.playerOffset.y,

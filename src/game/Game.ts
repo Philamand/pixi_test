@@ -45,7 +45,7 @@ export class Game {
       new ExploreScene(
         this.app,
         this.tilemaps.summer,
-        this.tilemaps.characters,
+        this.tilemaps.assassin,
         () => this.start(),
       ),
     );

@@ -72,7 +72,9 @@ src/
 
 ## Exploration
 
-Choose **Explore** on the selection screen to walk the hero freely around
+Choose **Explore** on the selection screen to walk the hero (animated
+assassin spritesheets from `assets/sprites/assassin/`, sliced into 480x480
+frames by `src/assets.ts`) freely around
 the summer map (hold WASD or arrow keys; trees, ponds, fences, rocks
 and the map edge block movement via tile collision). Press **Esc** to return
 to the selection screen. The map layout lives in `src/data/explore.ts` and
