@@ -47,7 +47,8 @@ export class ExploreScene implements Scene {
   private facing: Facing = "down";
 
   private path: Tile[] = [];
-  private tileSize = EXPLORE_TILE_SIZE;
+  private tileW = EXPLORE_TILE_SIZE;
+  private tileH = EXPLORE_TILE_SIZE;
   private readonly playerOffset = new Point(
     (EXPLORE_SPAWN.x + 0.5) * EXPLORE_TILE_SIZE,
     (EXPLORE_SPAWN.y + 0.5) * EXPLORE_TILE_SIZE,
@@ -105,19 +106,17 @@ export class ExploreScene implements Scene {
       .fill(0x1d1d36)
       .stroke({ width: 2, color: 0x2e2e4a });
 
-    const size = Math.max(
-      8,
-      Math.min(width / EXPLORE_COLS, playH / EXPLORE_ROWS),
-    );
-    const ratio = size / this.tileSize;
-    this.tileSize = size;
+    const prevW = this.tileW;
+    const prevH = this.tileH;
+    this.tileW = Math.max(8, width / EXPLORE_COLS);
+    this.tileH = Math.max(8, playH / EXPLORE_ROWS);
     this.playerOffset.set(
-      this.playerOffset.x * ratio,
-      this.playerOffset.y * ratio,
+      this.playerOffset.x * (this.tileW / prevW),
+      this.playerOffset.y * (this.tileH / prevH),
     );
 
-    const mapW = EXPLORE_COLS * this.tileSize;
-    const mapH = EXPLORE_ROWS * this.tileSize;
+    const mapW = EXPLORE_COLS * this.tileW;
+    const mapH = EXPLORE_ROWS * this.tileH;
     this.origin.set((width - mapW) / 2, (playH - mapH) / 2);
 
     this.buildTileSprites();
@@ -151,10 +150,10 @@ export class ExploreScene implements Scene {
     if (!texture) return;
     const sprite = new Sprite(texture);
     sprite.anchor.set(0.5);
-    sprite.scale.set(this.tileSize / Math.max(texture.width, texture.height));
+    sprite.scale.set(this.tileW / texture.width, this.tileH / texture.height);
     sprite.position.set(
-      this.origin.x + (x + 0.5) * this.tileSize,
-      this.origin.y + (y + 0.5) * this.tileSize,
+      this.origin.x + (x + 0.5) * this.tileW,
+      this.origin.y + (y + 0.5) * this.tileH,
     );
     this.tileLayer.addChild(sprite);
   }
@@ -170,8 +169,8 @@ export class ExploreScene implements Scene {
     const tile = this.toTile(e.global);
     if (!tile || isExploreBlocked(tile.x, tile.y)) return;
     const from: Tile = {
-      x: Math.floor(this.playerOffset.x / this.tileSize),
-      y: Math.floor(this.playerOffset.y / this.tileSize),
+      x: Math.floor(this.playerOffset.x / this.tileW),
+      y: Math.floor(this.playerOffset.y / this.tileH),
     };
     const path = findPath(from, tile, EXPLORE_COLS, EXPLORE_ROWS, (t) =>
       isExploreBlocked(t.x, t.y),
@@ -180,8 +179,8 @@ export class ExploreScene implements Scene {
   };
 
   private toTile(p: Point): Tile | null {
-    const x = Math.floor((p.x - this.origin.x) / this.tileSize);
-    const y = Math.floor((p.y - this.origin.y) / this.tileSize);
+    const x = Math.floor((p.x - this.origin.x) / this.tileW);
+    const y = Math.floor((p.y - this.origin.y) / this.tileH);
     if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;
     return { x, y };
   }
@@ -193,8 +192,8 @@ export class ExploreScene implements Scene {
     }
 
     const target = this.path[0];
-    const targetX = (target.x + 0.5) * this.tileSize;
-    const targetY = (target.y + 0.5) * this.tileSize;
+    const targetX = (target.x + 0.5) * this.tileW;
+    const targetY = (target.y + 0.5) * this.tileH;
     const dx = targetX - this.playerOffset.x;
     const dy = targetY - this.playerOffset.y;
     const dist = Math.hypot(dx, dy);
@@ -226,7 +225,7 @@ export class ExploreScene implements Scene {
   }
 
   private positionPlayer(): void {
-    this.player.scale.set((this.tileSize * 1.5) / SPRITE_FRAME_PX);
+    this.player.scale.set((this.tileH * 1.5) / SPRITE_FRAME_PX);
     this.player.position.set(
       this.origin.x + this.playerOffset.x,
       this.origin.y + this.playerOffset.y,
