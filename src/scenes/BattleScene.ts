@@ -9,7 +9,7 @@ import {
   Text,
   Ticker,
 } from "pixi.js";
-import type { TileTextures } from "../assets";
+import type { CharacterSprites, TileTextures } from "../assets";
 import {
   BACKSTAB_MULTIPLIER,
   enemyStats,
@@ -19,7 +19,7 @@ import {
   partyStats,
   TILE_SIZE,
 } from "../data/battle";
-import { SUMMER_TILE, tileTextureId } from "../data/tiles";
+import { SUMMER_TILE, type SpriteSetName } from "../data/tiles";
 import { Fighter, type Skill } from "../entities/Fighter";
 import type { Scene } from "../game/Scene";
 import { TurnManager } from "../systems/TurnManager";
@@ -67,7 +67,7 @@ export class BattleScene implements Scene {
   constructor(
     private readonly app: Application,
     private readonly ground: TileTextures,
-    private readonly characters: TileTextures,
+    private readonly sprites: Record<SpriteSetName, CharacterSprites>,
     private readonly onRestart: () => void,
   ) {}
 
@@ -80,7 +80,7 @@ export class BattleScene implements Scene {
     );
 
     this.fighters = [...partyStats, ...enemyStats].map(
-      (s) => new Fighter(s, this.characters[tileTextureId(s.sprite)]),
+      (s) => new Fighter(s, this.sprites[s.sprites]),
     );
     for (const f of this.fighters) this.container.addChild(f);
 
@@ -379,7 +379,7 @@ export class BattleScene implements Scene {
     this.pendingSkill = null;
     if (skill) f.spendMp(skill.mpCost);
 
-    await this.lunge(f, target);
+    await Promise.all([this.lunge(f, target), f.attack()]);
 
     if (skill?.healAmount) {
       const healed = target.heal(skill.healAmount);
@@ -423,7 +423,7 @@ export class BattleScene implements Scene {
     }
 
     if (chebyshev(f.tile, nearest) <= f.stats.range) {
-      await this.lunge(f, nearest);
+      await Promise.all([this.lunge(f, nearest), f.attack()]);
       const { damage, backstab } = this.rollDamage(f, nearest, null);
       nearest.takeDamage(damage);
       this.log.add(
@@ -524,6 +524,7 @@ export class BattleScene implements Scene {
       f.faceToward(from, tile);
       f.tileX = tile.x;
       f.tileY = tile.y;
+      f.playWalk();
       const start = f.position.clone();
       const target = this.tileCenter(tile);
       tween(
@@ -535,7 +536,10 @@ export class BattleScene implements Scene {
             start.y + (target.y - start.y) * p,
           );
         },
-        resolve,
+        () => {
+          f.playIdle();
+          resolve();
+        },
       );
     });
   }

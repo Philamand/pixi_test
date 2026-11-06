@@ -66,15 +66,16 @@ src/
 - Ground and prop tiles come from the Simple Summer set as individual PNGs
   in `assets/tiles/simple_summer/`, loaded by `src/assets.ts` and keyed by
   file name (e.g. `ground_05`, `prop_tree_medium`; see `SUMMER_TILE` in
-  `src/data/tiles.ts`). Characters still use the Kenney Tiny Dungeon
-  tilemap (`assets/tiny_dungeon_tilemap.png`), sliced into 16x16 frames by
-  `src/assets.ts`; character indices live in `DUNGEON_CHARACTER`.
+  `src/data/tiles.ts`). Characters use the animated spritesheets in
+  `assets/sprites/` (assassin, goblin, chief_goblin), sliced into 480x480
+  frames by `src/assets.ts`; each fighter's sprite set lives in the
+  `sprites` field of `src/data/battle.ts` (see `SPRITE_SET` in
+  `src/data/tiles.ts`).
 
 ## Exploration
 
 Choose **Explore** on the selection screen to walk the hero (animated
-assassin spritesheets from `assets/sprites/assassin/`, sliced into 480x480
-frames by `src/assets.ts`) freely around
+assassin spritesheets from `assets/sprites/assassin/`) freely around
 the summer map (hold WASD or arrow keys; trees, ponds, fences, rocks
 and the map edge block movement via tile collision). Press **Esc** to return
 to the selection screen. The map layout lives in `src/data/explore.ts` and

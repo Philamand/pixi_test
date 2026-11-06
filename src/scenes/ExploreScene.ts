@@ -10,7 +10,7 @@ import {
 } from "pixi.js";
 import {
   SPRITE_FRAME_PX,
-  type SpriteAnimations,
+  type CharacterSprites,
   type TileTextures,
 } from "../assets";
 import {
@@ -64,10 +64,10 @@ export class ExploreScene implements Scene {
   constructor(
     private readonly app: Application,
     private readonly ground: TileTextures,
-    private readonly animations: SpriteAnimations,
+    private readonly animations: CharacterSprites,
     private readonly onExit: () => void,
   ) {
-    this.player = new AnimatedSprite(animations.down.idle);
+    this.player = new AnimatedSprite(animations.directions.down.idle);
     this.player.anchor.set(0.5, 0.8);
     this.player.animationSpeed = 0.1;
     this.player.play();
@@ -191,8 +191,8 @@ export class ExploreScene implements Scene {
 
   private setPlayerAnimation(moving: boolean): void {
     const anim = moving
-      ? this.animations[this.facing].walk
-      : this.animations[this.facing].idle;
+      ? this.animations.directions[this.facing].walk
+      : this.animations.directions[this.facing].idle;
     if (this.player.textures !== anim) {
       this.player.textures = anim;
       this.player.gotoAndPlay(0);

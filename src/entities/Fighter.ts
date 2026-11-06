@@ -1,6 +1,7 @@
-import { Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
+import { AnimatedSprite, Container, Text } from "pixi.js";
+import { SPRITE_FRAME_PX, type CharacterSprites } from "../assets";
 import { MAX_CT, TILE_SIZE } from "../data/battle";
-import { CHARACTER_PX } from "../data/tiles";
+import { type SpriteSetName } from "../data/tiles";
 import { HealthBar } from "../ui/HealthBar";
 import { facingFromDelta, type Facing, type Tile } from "../utils/grid";
 
@@ -29,9 +30,11 @@ export interface FighterStats {
   range: number;
   color: number;
   spawn: Tile;
-  sprite: number;
+  sprites: SpriteSetName;
   skills: Skill[];
 }
+
+type FighterState = "idle" | "walk" | "attack" | "hurt" | "dying";
 
 export class Fighter extends Container {
   readonly stats: FighterStats;
@@ -43,11 +46,15 @@ export class Fighter extends Container {
   mp: number;
   ct = 0;
 
+  private readonly sprite: AnimatedSprite;
   private readonly mpBar: HealthBar;
   private readonly ctBar: HealthBar;
-  private readonly facingGfx = new Graphics();
+  private state: FighterState = "idle";
 
-  constructor(stats: FighterStats, texture?: Texture) {
+  constructor(
+    stats: FighterStats,
+    private readonly sprites: CharacterSprites,
+  ) {
     super();
     this.stats = stats;
     this.hp = stats.maxHp;
@@ -56,31 +63,23 @@ export class Fighter extends Container {
     this.tileY = stats.spawn.y;
     this.facing = stats.team === "enemy" ? "left" : "right";
 
-    if (texture) {
-      const sprite = new Sprite(texture);
-      sprite.anchor.set(0.5);
-      sprite.scale.set((TILE_SIZE * 0.9) / CHARACTER_PX);
-      this.addChild(sprite, this.facingGfx);
-    } else {
-      this.addChild(
-        new Graphics()
-          .roundRect(-26, -34, 52, 68, 10)
-          .fill(stats.color)
-          .stroke({ width: 3, color: 0x000000 }),
-        this.facingGfx,
-      );
-    }
+    this.sprite = new AnimatedSprite(sprites.directions[this.facing].idle);
+    this.sprite.anchor.set(0.5, 0.8);
+    this.sprite.scale.set((TILE_SIZE * 1.5) / SPRITE_FRAME_PX);
+    this.sprite.animationSpeed = 0.12;
+    this.sprite.play();
+    this.addChild(this.sprite);
 
     const nameLabel = new Text({
       text: stats.name,
       style: { fill: 0xffffff, fontSize: 14, fontWeight: "bold" },
     });
     nameLabel.anchor.set(0.5, 1);
-    nameLabel.y = -56;
+    nameLabel.y = -80;
     this.addChild(nameLabel);
 
     this.ctBar = new HealthBar(MAX_CT, 56, 5, 0xffd54a);
-    this.ctBar.y = -50;
+    this.ctBar.y = -74;
     this.addChild(this.ctBar);
 
     this.healthBar = new HealthBar(stats.maxHp, 64, 10);
@@ -91,8 +90,6 @@ export class Fighter extends Container {
     this.mpBar.y = 56;
     this.mpBar.visible = stats.maxMp > 0;
     this.addChild(this.mpBar);
-
-    this.drawFacing();
   }
 
   get tile(): Tile {
@@ -106,7 +103,17 @@ export class Fighter extends Container {
   takeDamage(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
     this.healthBar.setHp(this.hp);
-    if (!this.isAlive) this.visible = false;
+    if (!this.isAlive) {
+      this.state = "dying";
+      this.sprite.loop = false;
+      this.sprite.onComplete = () => {
+        this.visible = false;
+      };
+      this.sprite.textures = this.sprites.dying;
+      this.sprite.gotoAndPlay(0);
+    } else {
+      this.playOnce("hurt", () => this.setState("idle"));
+    }
   }
 
   heal(amount: number): number {
@@ -130,25 +137,42 @@ export class Fighter extends Container {
 
   faceToward(from: Tile, to: Tile): void {
     this.facing = facingFromDelta(to.x - from.x, to.y - from.y);
-    this.drawFacing();
+    if (this.state === "idle") this.setState("idle");
   }
 
-  private drawFacing(): void {
-    const g = this.facingGfx.clear();
-    switch (this.facing) {
-      case "up":
-        g.moveTo(-8, -34).lineTo(8, -34).lineTo(0, -46).closePath();
-        break;
-      case "down":
-        g.moveTo(-8, 34).lineTo(8, 34).lineTo(0, 46).closePath();
-        break;
-      case "left":
-        g.moveTo(-26, -8).lineTo(-26, 8).lineTo(-38, 0).closePath();
-        break;
-      case "right":
-        g.moveTo(26, -8).lineTo(26, 8).lineTo(38, 0).closePath();
-        break;
-    }
-    g.fill(0xffffff);
+  playWalk(): void {
+    this.setState("walk");
+  }
+
+  playIdle(): void {
+    this.setState("idle");
+  }
+
+  attack(): Promise<void> {
+    return new Promise((resolve) => {
+      this.playOnce("attack", () => {
+        this.setState("idle");
+        resolve();
+      });
+    });
+  }
+
+  private setState(state: FighterState): void {
+    this.state = state;
+    if (state === "dying") return;
+    const frames = this.sprites.directions[this.facing][state];
+    this.sprite.loop = true;
+    this.sprite.onComplete = undefined;
+    if (this.sprite.textures !== frames) this.sprite.textures = frames;
+    this.sprite.gotoAndPlay(0);
+  }
+
+  private playOnce(state: "attack" | "hurt", onDone: () => void): void {
+    this.state = state;
+    const frames = this.sprites.directions[this.facing][state];
+    this.sprite.loop = false;
+    this.sprite.onComplete = onDone;
+    if (this.sprite.textures !== frames) this.sprite.textures = frames;
+    this.sprite.gotoAndPlay(0);
   }
 }

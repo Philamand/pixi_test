@@ -34,7 +34,7 @@ export class Game {
       new BattleScene(
         this.app,
         this.tilemaps.summer,
-        this.tilemaps.characters,
+        this.tilemaps.sprites,
         () => this.startBattle(),
       ),
     );
@@ -45,7 +45,7 @@ export class Game {
       new ExploreScene(
         this.app,
         this.tilemaps.summer,
-        this.tilemaps.assassin,
+        this.tilemaps.sprites.assassin,
         () => this.start(),
       ),
     );
