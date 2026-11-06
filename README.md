@@ -70,7 +70,8 @@ src/
 
 ## Exploration
 
-Choose **Explore** on the selection screen to walk the hero around the town
-map (WASD or arrow keys, one tile per step; rocks and the map edge block
-movement). Press **Esc** to return to the selection screen. The map layout
-lives in `src/data/explore.ts` and uses tiles from the town tilemap.
+Choose **Explore** on the selection screen to walk the hero freely around
+the town map (hold WASD or arrow keys; rocks and the map edge block movement
+via tile collision). Press **Esc** to return to the selection screen. The
+map layout lives in `src/data/explore.ts` and uses tiles from the town
+tilemap.

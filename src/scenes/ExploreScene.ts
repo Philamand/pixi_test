@@ -1,4 +1,12 @@
-import { Application, Container, Graphics, Point, Sprite, Text } from "pixi.js";
+import {
+  Application,
+  Container,
+  Graphics,
+  Point,
+  Sprite,
+  Text,
+  Ticker,
+} from "pixi.js";
 import type { TileTextures } from "../assets";
 import {
   EXPLORE_COLS,
@@ -10,25 +18,24 @@ import {
 } from "../data/explore";
 import { TILE_INDEX, TILE_PX, tileTextureId } from "../data/tiles";
 import type { Scene } from "../game/Scene";
-import type { Tile } from "../utils/grid";
-import { tween, type TweenHandle } from "../utils/tween";
 
-const MOVE_MS = 140;
+const SPEED_PX_PER_MS = 0.18;
+const PLAYER_RADIUS = 12;
 
-const KEY_DELTAS: Record<string, Tile> = {
-  ArrowUp: { x: 0, y: -1 },
-  ArrowDown: { x: 0, y: 1 },
-  ArrowLeft: { x: -1, y: 0 },
-  ArrowRight: { x: 1, y: 0 },
-  w: { x: 0, y: -1 },
-  s: { x: 0, y: 1 },
-  a: { x: -1, y: 0 },
-  d: { x: 1, y: 0 },
-  W: { x: 0, y: -1 },
-  S: { x: 0, y: 1 },
-  A: { x: -1, y: 0 },
-  D: { x: 1, y: 0 },
-};
+const MOVE_KEYS = new Set([
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "w",
+  "s",
+  "a",
+  "d",
+  "W",
+  "S",
+  "A",
+  "D",
+]);
 
 export class ExploreScene implements Scene {
   readonly container = new Container();
@@ -41,10 +48,12 @@ export class ExploreScene implements Scene {
     style: { fill: 0xccccdd, fontSize: 14, align: "center" },
   });
 
-  private playerTile: Tile = { ...EXPLORE_SPAWN };
+  private readonly keys = new Set<string>();
+  private readonly playerOffset = new Point(
+    (EXPLORE_SPAWN.x + 0.5) * EXPLORE_TILE_SIZE,
+    (EXPLORE_SPAWN.y + 0.5) * EXPLORE_TILE_SIZE,
+  );
   private origin = new Point(0, 0);
-  private moving = false;
-  private moveTween: TweenHandle | null = null;
 
   constructor(
     private readonly app: Application,
@@ -60,14 +69,19 @@ export class ExploreScene implements Scene {
 
     this.app.renderer.on("resize", this.layout);
     window.addEventListener("keydown", this.onKeyDown);
+    window.addEventListener("keyup", this.onKeyUp);
+    window.addEventListener("blur", this.clearKeys);
+    this.app.ticker.add(this.update);
     this.layout();
   }
 
   exit(): void {
     this.app.renderer.off("resize", this.layout);
     window.removeEventListener("keydown", this.onKeyDown);
-    this.moveTween?.cancel();
-    this.moveTween = null;
+    window.removeEventListener("keyup", this.onKeyUp);
+    window.removeEventListener("blur", this.clearKeys);
+    this.app.ticker.remove(this.update);
+    this.keys.clear();
   }
 
   private readonly layout = (): void => {
@@ -117,48 +131,75 @@ export class ExploreScene implements Scene {
       this.onExit();
       return;
     }
-    const delta = KEY_DELTAS[e.key];
-    if (!delta) return;
+    if (!MOVE_KEYS.has(e.key)) return;
     e.preventDefault();
-    this.tryMove(delta);
+    this.keys.add(e.key);
   };
 
-  private tryMove(delta: Tile): void {
-    if (this.moving) return;
-    const target = {
-      x: this.playerTile.x + delta.x,
-      y: this.playerTile.y + delta.y,
-    };
-    if (isExploreBlocked(target.x, target.y)) return;
+  private readonly onKeyUp = (e: KeyboardEvent): void => {
+    this.keys.delete(e.key);
+  };
 
-    this.moving = true;
-    const start = this.player.position.clone();
-    const end = new Point(
-      this.origin.x + (target.x + 0.5) * EXPLORE_TILE_SIZE,
-      this.origin.y + (target.y + 0.5) * EXPLORE_TILE_SIZE,
+  private readonly clearKeys = (): void => {
+    this.keys.clear();
+  };
+
+  private readonly update = (t: Ticker): void => {
+    let dx = 0;
+    let dy = 0;
+    if (this.keys.has("ArrowLeft") || this.keys.has("a") || this.keys.has("A"))
+      dx -= 1;
+    if (this.keys.has("ArrowRight") || this.keys.has("d") || this.keys.has("D"))
+      dx += 1;
+    if (this.keys.has("ArrowUp") || this.keys.has("w") || this.keys.has("W"))
+      dy -= 1;
+    if (this.keys.has("ArrowDown") || this.keys.has("s") || this.keys.has("S"))
+      dy += 1;
+    if (dx === 0 && dy === 0) return;
+    if (dx !== 0 && dy !== 0) {
+      dx *= Math.SQRT1_2;
+      dy *= Math.SQRT1_2;
+    }
+
+    const step = SPEED_PX_PER_MS * t.deltaMS;
+    let absX = this.origin.x + this.playerOffset.x;
+    let absY = this.origin.y + this.playerOffset.y;
+
+    const nextX = absX + dx * step;
+    if (!this.collides(nextX, absY)) absX = nextX;
+    const nextY = absY + dy * step;
+    if (!this.collides(absX, nextY)) absY = nextY;
+
+    this.playerOffset.set(absX - this.origin.x, absY - this.origin.y);
+    this.positionPlayer();
+  };
+
+  private collides(x: number, y: number): boolean {
+    const minTx = Math.floor(
+      (x - PLAYER_RADIUS - this.origin.x) / EXPLORE_TILE_SIZE,
     );
-    this.moveTween = tween(
-      this.app.ticker,
-      MOVE_MS,
-      (p) => {
-        this.player.position.set(
-          start.x + (end.x - start.x) * p,
-          start.y + (end.y - start.y) * p,
-        );
-      },
-      () => {
-        this.playerTile = target;
-        this.moving = false;
-        this.moveTween = null;
-      },
+    const maxTx = Math.floor(
+      (x + PLAYER_RADIUS - this.origin.x) / EXPLORE_TILE_SIZE,
     );
+    const minTy = Math.floor(
+      (y - PLAYER_RADIUS - this.origin.y) / EXPLORE_TILE_SIZE,
+    );
+    const maxTy = Math.floor(
+      (y + PLAYER_RADIUS - this.origin.y) / EXPLORE_TILE_SIZE,
+    );
+    for (let ty = minTy; ty <= maxTy; ty++) {
+      for (let tx = minTx; tx <= maxTx; tx++) {
+        if (isExploreBlocked(tx, ty)) return true;
+      }
+    }
+    return false;
   }
 
   private positionPlayer(): void {
     this.player.scale.set(EXPLORE_TILE_SIZE / TILE_PX);
     this.player.position.set(
-      this.origin.x + (this.playerTile.x + 0.5) * EXPLORE_TILE_SIZE,
-      this.origin.y + (this.playerTile.y + 0.5) * EXPLORE_TILE_SIZE,
+      this.origin.x + this.playerOffset.x,
+      this.origin.y + this.playerOffset.y,
     );
   }
 }
