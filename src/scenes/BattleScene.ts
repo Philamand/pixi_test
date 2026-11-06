@@ -24,8 +24,6 @@ import { Fighter, type Skill } from "../entities/Fighter";
 import type { Scene } from "../game/Scene";
 import { TurnManager } from "../systems/TurnManager";
 import { ActionMenu, type MenuItem } from "../ui/ActionMenu";
-import { BattleLog } from "../ui/BattleLog";
-import { TurnOrderPanel } from "../ui/TurnOrderPanel";
 import {
   chebyshev,
   FACING_VECTORS,
@@ -39,6 +37,8 @@ type Phase = "charging" | "menu" | "resolving" | "enemy" | "over";
 
 type Selecting = "none" | "move" | "target";
 
+const MENU_BAR_HEIGHT = 56;
+
 export class BattleScene implements Scene {
   readonly container = new Container();
 
@@ -46,11 +46,10 @@ export class BattleScene implements Scene {
   private readonly tileLayer = new Container();
   private readonly gridGfx = new Graphics();
   private readonly highlightGfx = new Graphics();
+  private readonly menuBar = new Graphics();
   private readonly menu = new ActionMenu();
-  private readonly log = new BattleLog();
   private fighters: Fighter[] = [];
   private turns!: TurnManager;
-  private orderPanel!: TurnOrderPanel;
   private banner!: Text;
 
   private phase: Phase = "charging";
@@ -62,6 +61,8 @@ export class BattleScene implements Scene {
   private pendingSkill: Skill | null = null;
   private hover: Tile | null = null;
   private over = false;
+  private tileW = TILE_SIZE;
+  private tileH = TILE_SIZE;
   private origin = new Point(0, 0);
 
   constructor(
@@ -74,6 +75,7 @@ export class BattleScene implements Scene {
   enter(): void {
     this.container.addChild(
       this.bg,
+      this.menuBar,
       this.tileLayer,
       this.gridGfx,
       this.highlightGfx,
@@ -84,8 +86,7 @@ export class BattleScene implements Scene {
     );
     for (const f of this.fighters) this.container.addChild(f);
 
-    this.orderPanel = new TurnOrderPanel(this.fighters);
-    this.container.addChild(this.menu, this.log, this.orderPanel);
+    this.container.addChild(this.menu);
 
     this.banner = new Text({
       text: "",
@@ -108,7 +109,6 @@ export class BattleScene implements Scene {
     this.layout();
 
     this.turns = new TurnManager(this.fighters);
-    this.log.add("Tactical battle! Defeat all enemies.");
     this.app.ticker.add(this.update);
   }
 
@@ -122,37 +122,51 @@ export class BattleScene implements Scene {
 
     this.bg.clear().rect(0, 0, width, height).fill(0x141428);
 
-    const panelWidth = 250;
-    const gridW = GRID_COLS * TILE_SIZE;
-    const gridH = GRID_ROWS * TILE_SIZE;
-    this.origin.set(
-      Math.max(16, (width - panelWidth - gridW) / 2),
-      Math.max(48, (height - gridH) / 2 - 16),
-    );
+    const playH = height - MENU_BAR_HEIGHT;
+    this.menuBar
+      .clear()
+      .rect(0, playH, width, MENU_BAR_HEIGHT)
+      .fill(0x1d1d36)
+      .stroke({ width: 2, color: 0x2e2e4a });
+
+    this.tileW = Math.max(8, width / GRID_COLS);
+    this.tileH = Math.max(8, playH / GRID_ROWS);
+    this.origin.set(0, 0);
 
     this.buildTileSprites();
 
     this.gridGfx.clear();
     for (let y = 0; y < GRID_ROWS; y++) {
       for (let x = 0; x < GRID_COLS; x++) {
-        const px = this.origin.x + x * TILE_SIZE;
-        const py = this.origin.y + y * TILE_SIZE;
+        const px = this.origin.x + x * this.tileW;
+        const py = this.origin.y + y * this.tileH;
         this.gridGfx
-          .rect(px, py, TILE_SIZE, TILE_SIZE)
+          .rect(px, py, this.tileW, this.tileH)
           .stroke({ width: 1, color: 0x00000088 });
       }
     }
 
-    for (const f of this.fighters) this.positionFighter(f);
+    for (const f of this.fighters) {
+      f.scale.set(this.tileW / TILE_SIZE, this.tileH / TILE_SIZE);
+      this.positionFighter(f);
+    }
 
-    const panelX = this.origin.x + gridW + 24;
-    this.orderPanel.position.set(panelX, this.origin.y);
-    this.log.position.set(panelX, this.origin.y + 250);
-    this.menu.position.set(this.origin.x, this.origin.y + gridH + 16);
-    this.banner.position.set(width / 2, height * 0.12);
+    this.layoutMenu();
+    this.banner.position.set(width / 2, playH * 0.12);
     this.container.hitArea = new Rectangle(0, 0, width, height);
     this.drawHighlights();
   };
+
+  private layoutMenu(): void {
+    const { width, height } = this.app.screen;
+    const playH = height - MENU_BAR_HEIGHT;
+    const menuScale = Math.min(1, (width - 16) / Math.max(1, this.menu.width));
+    this.menu.scale.set(menuScale);
+    this.menu.position.set(
+      8,
+      playH + (MENU_BAR_HEIGHT - this.menu.height * menuScale) / 2,
+    );
+  }
 
   private buildTileSprites(): void {
     for (const child of this.tileLayer.removeChildren()) child.destroy();
@@ -174,10 +188,13 @@ export class BattleScene implements Scene {
           if (!texture) continue;
           const sprite = new Sprite(texture);
           sprite.anchor.set(0.5);
-          sprite.scale.set(TILE_SIZE / Math.max(texture.width, texture.height));
+          sprite.scale.set(
+            this.tileW / texture.width,
+            this.tileH / texture.height,
+          );
           sprite.position.set(
-            this.origin.x + (x + 0.5) * TILE_SIZE,
-            this.origin.y + (y + 0.5) * TILE_SIZE,
+            this.origin.x + (x + 0.5) * this.tileW,
+            this.origin.y + (y + 0.5) * this.tileH,
           );
           this.tileLayer.addChild(sprite);
         }
@@ -186,7 +203,6 @@ export class BattleScene implements Scene {
   }
 
   private readonly update = (t: Ticker): void => {
-    this.orderPanel.refresh();
     if (this.over || this.phase !== "charging") return;
     this.turns.update(t.deltaMS);
     const ready = this.turns.ready();
@@ -202,7 +218,6 @@ export class BattleScene implements Scene {
     if (f.stats.team === "player") {
       this.phase = "menu";
       this.hasMoved = false;
-      this.log.add(`${f.stats.name}'s turn.`);
       this.showMainMenu();
     } else {
       this.phase = "enemy";
@@ -258,7 +273,8 @@ export class BattleScene implements Scene {
       { id: "skill", label: "Skill" },
       { id: "wait", label: "Wait" },
     ];
-    this.menu.show(items, (id) => this.onMenuSelect(id));
+    this.menu.show(items, (id) => this.onMenuSelect(id), "horizontal");
+    this.layoutMenu();
   }
 
   private onMenuSelect(id: string): void {
@@ -271,18 +287,15 @@ export class BattleScene implements Scene {
         if (this.selecting === "move") {
           this.selecting = "none";
           this.moveTiles = [];
-          this.log.add("Move cancelled.");
           this.drawHighlights();
         } else {
           this.selecting = "move";
           this.computeMoveTiles();
-          this.log.add("Choose a destination tile.");
           this.drawHighlights();
         }
         break;
       case "attack":
         if (abortingAttack) {
-          this.log.add("Attack cancelled.");
           this.drawHighlights();
         } else {
           this.beginTargeting(null);
@@ -292,7 +305,6 @@ export class BattleScene implements Scene {
         this.showSkillMenu();
         break;
       case "wait":
-        this.log.add(`${this.active.stats.name} waits.`);
         this.endTurn();
         break;
     }
@@ -308,15 +320,20 @@ export class BattleScene implements Scene {
     }));
     items.push({ id: "back", label: "Back" });
     this.cancelTargeting();
-    this.menu.show(items, (id) => {
-      if (!this.active) return;
-      if (id === "back") {
-        this.showMainMenu();
-        return;
-      }
-      const skill = this.active.stats.skills.find((s) => s.id === id);
-      if (skill) this.beginTargeting(skill);
-    });
+    this.menu.show(
+      items,
+      (id) => {
+        if (!this.active) return;
+        if (id === "back") {
+          this.showMainMenu();
+          return;
+        }
+        const skill = this.active.stats.skills.find((s) => s.id === id);
+        if (skill) this.beginTargeting(skill);
+      },
+      "horizontal",
+    );
+    this.layoutMenu();
   }
 
   private beginTargeting(skill: Skill | null): void {
@@ -326,7 +343,6 @@ export class BattleScene implements Scene {
     const pool = skill?.targetAlly ? this.aliveAllies() : this.aliveEnemies();
     this.targetUnits = pool.filter((t) => chebyshev(f.tile, t.tile) <= range);
     if (this.targetUnits.length === 0) {
-      this.log.add("No target in range.");
       this.selecting = "none";
       this.showMainMenu();
       this.drawHighlights();
@@ -335,9 +351,6 @@ export class BattleScene implements Scene {
     this.pendingSkill = skill;
     this.selecting = "target";
     this.showMainMenu();
-    this.log.add(
-      skill ? `Choose a target for ${skill.name}.` : "Choose a target.",
-    );
     this.drawHighlights();
   }
 
@@ -382,17 +395,10 @@ export class BattleScene implements Scene {
     await Promise.all([this.lunge(f, target), f.attack()]);
 
     if (skill?.healAmount) {
-      const healed = target.heal(skill.healAmount);
-      this.log.add(
-        `${f.stats.name} casts ${skill.name} on ${target.stats.name} (+${healed} HP).`,
-      );
+      target.heal(skill.healAmount);
     } else {
-      const { damage, backstab } = this.rollDamage(f, target, skill);
+      const { damage } = this.rollDamage(f, target, skill);
       target.takeDamage(damage);
-      this.log.add(
-        `${f.stats.name} hits ${target.stats.name} for ${damage} damage!` +
-          (backstab ? " Back attack!" : ""),
-      );
     }
     this.endTurn();
   }
@@ -424,14 +430,8 @@ export class BattleScene implements Scene {
 
     if (chebyshev(f.tile, nearest) <= f.stats.range) {
       await Promise.all([this.lunge(f, nearest), f.attack()]);
-      const { damage, backstab } = this.rollDamage(f, nearest, null);
+      const { damage } = this.rollDamage(f, nearest, null);
       nearest.takeDamage(damage);
-      this.log.add(
-        `${f.stats.name} hits ${nearest.stats.name} for ${damage} damage!` +
-          (backstab ? " Back attack!" : ""),
-      );
-    } else {
-      this.log.add(`${f.stats.name} waits.`);
     }
     this.endTurn();
   }
@@ -573,14 +573,14 @@ export class BattleScene implements Scene {
 
   private tileCenter(t: Tile): Point {
     return new Point(
-      this.origin.x + (t.x + 0.5) * TILE_SIZE,
-      this.origin.y + (t.y + 0.5) * TILE_SIZE,
+      this.origin.x + (t.x + 0.5) * this.tileW,
+      this.origin.y + (t.y + 0.5) * this.tileH,
     );
   }
 
   private toTile(p: Point): Tile | null {
-    const x = Math.floor((p.x - this.origin.x) / TILE_SIZE);
-    const y = Math.floor((p.y - this.origin.y) / TILE_SIZE);
+    const x = Math.floor((p.x - this.origin.x) / this.tileW);
+    const y = Math.floor((p.y - this.origin.y) / this.tileH);
     if (x < 0 || y < 0 || x >= GRID_COLS || y >= GRID_ROWS) return null;
     return { x, y };
   }
@@ -608,13 +608,13 @@ export class BattleScene implements Scene {
   private drawHighlights(): void {
     const g = this.highlightGfx.clear();
     const tileXY = (t: Tile): [number, number] => [
-      this.origin.x + t.x * TILE_SIZE,
-      this.origin.y + t.y * TILE_SIZE,
+      this.origin.x + t.x * this.tileW,
+      this.origin.y + t.y * this.tileH,
     ];
 
     if (this.active && this.phase !== "charging" && this.phase !== "over") {
       const [px, py] = tileXY(this.active.tile);
-      g.rect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4).stroke({
+      g.rect(px + 2, py + 2, this.tileW - 4, this.tileH - 4).stroke({
         width: 3,
         color: 0xffe066,
       });
@@ -622,7 +622,7 @@ export class BattleScene implements Scene {
     if (this.selecting === "move") {
       for (const t of this.moveTiles) {
         const [px, py] = tileXY(t);
-        g.rect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6).fill({
+        g.rect(px + 3, py + 3, this.tileW - 6, this.tileH - 6).fill({
           color: 0x4a9eff,
           alpha: 0.35,
         });
@@ -631,7 +631,7 @@ export class BattleScene implements Scene {
     if (this.selecting === "target") {
       for (const u of this.targetUnits) {
         const [px, py] = tileXY(u.tile);
-        g.rect(px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6)
+        g.rect(px + 3, py + 3, this.tileW - 6, this.tileH - 6)
           .fill({ color: 0xe05555, alpha: 0.4 })
           .stroke({ width: 2, color: 0xff8080 });
       }
@@ -641,7 +641,7 @@ export class BattleScene implements Scene {
       (this.selecting === "move" || this.selecting === "target")
     ) {
       const [px, py] = tileXY(this.hover);
-      g.rect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2).stroke({
+      g.rect(px + 1, py + 1, this.tileW - 2, this.tileH - 2).stroke({
         width: 2,
         color: 0xffffff,
       });

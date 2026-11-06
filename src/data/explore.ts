@@ -4,24 +4,28 @@ import type { Tile } from "../utils/grid";
 export const EXPLORE_TILE_SIZE = 48;
 
 export const EXPLORE_LAYOUT: string[] = [
-  "TTTTTTTTTTTTTTTT",
-  "T......WW......T",
-  "T..t...WW......T",
-  "T......WW...t..T",
-  "T,,,,,,,,,,,,,.T",
-  "T.........###..T",
-  "T..t......###..T",
-  "T,,,,,,,,,,,,,.T",
-  "T..b...r.......T",
-  "T....t....r..b.T",
-  "T......FF......T",
-  "TTTTTTTTTTTTTTTT",
+  "TTTTTTTTTT",
+  "T........T",
+  "T..t.....T",
+  "T....WW..T",
+  "T.,,,,,..T",
+  "T.,WW,,..T",
+  "T........T",
+  "T..###...T",
+  "T..###...T",
+  "T........T",
+  "T....t...T",
+  "T,,,,,,,.T",
+  "T........T",
+  "T..b...r.T",
+  "T.....F..T",
+  "TTTTTTTTTT",
 ];
 
 export const EXPLORE_COLS = EXPLORE_LAYOUT[0].length;
 export const EXPLORE_ROWS = EXPLORE_LAYOUT.length;
 
-export const EXPLORE_SPAWN: Tile = { x: 7, y: 6 };
+export const EXPLORE_SPAWN: Tile = { x: 7, y: 9 };
 
 const LEGEND: Record<string, readonly string[]> = {
   T: [SUMMER_TILE.tree],
@@ -36,6 +40,12 @@ const LEGEND: Record<string, readonly string[]> = {
 };
 
 const BLOCKED = new Set(["T", "t", "W", "#", "F", "r"]);
+
+const GRASS_OPTIONS = LEGEND["."];
+
+export function exploreGrassKey(x: number, y: number): string {
+  return GRASS_OPTIONS[(x * 3 + y * 5) % GRASS_OPTIONS.length];
+}
 
 export function exploreTileKey(x: number, y: number): string | null {
   if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;

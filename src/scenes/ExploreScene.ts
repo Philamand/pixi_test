@@ -7,7 +7,6 @@ import {
   Point,
   Rectangle,
   Sprite,
-  Text,
   Ticker,
 } from "pixi.js";
 import {
@@ -17,13 +16,16 @@ import {
 } from "../assets";
 import {
   EXPLORE_COLS,
+  EXPLORE_LAYOUT,
   EXPLORE_ROWS,
   EXPLORE_SPAWN,
   EXPLORE_TILE_SIZE,
+  exploreGrassKey,
   exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
 import type { Scene } from "../game/Scene";
+import { ActionMenu } from "../ui/ActionMenu";
 import {
   facingFromDelta,
   findPath,
@@ -32,20 +34,21 @@ import {
 } from "../utils/grid";
 
 const SPEED_PX_PER_MS = 0.18;
+const MENU_BAR_HEIGHT = 56;
 
 export class ExploreScene implements Scene {
   readonly container = new Container();
 
   private readonly bg = new Graphics();
+  private readonly menuBar = new Graphics();
   private readonly tileLayer = new Container();
   private readonly player: AnimatedSprite;
+  private readonly menu = new ActionMenu();
   private facing: Facing = "down";
-  private readonly hint = new Text({
-    text: "Click or tap to move \u2014 Esc for menu",
-    style: { fill: 0xccccdd, fontSize: 14, align: "center" },
-  });
 
   private path: Tile[] = [];
+  private tileW = EXPLORE_TILE_SIZE;
+  private tileH = EXPLORE_TILE_SIZE;
   private readonly playerOffset = new Point(
     (EXPLORE_SPAWN.x + 0.5) * EXPLORE_TILE_SIZE,
     (EXPLORE_SPAWN.y + 0.5) * EXPLORE_TILE_SIZE,
@@ -65,7 +68,15 @@ export class ExploreScene implements Scene {
   }
 
   enter(): void {
-    this.container.addChild(this.bg, this.tileLayer, this.player, this.hint);
+    this.container.addChild(
+      this.bg,
+      this.menuBar,
+      this.tileLayer,
+      this.player,
+      this.menu,
+    );
+
+    this.menu.show([{ id: "menu", label: "Menu" }], () => this.onExit());
 
     this.container.eventMode = "static";
     this.container.on("pointerdown", this.onPointerDown);
@@ -88,18 +99,33 @@ export class ExploreScene implements Scene {
 
     this.bg.clear().rect(0, 0, width, height).fill(0x141428);
 
-    const mapW = EXPLORE_COLS * EXPLORE_TILE_SIZE;
-    const mapH = EXPLORE_ROWS * EXPLORE_TILE_SIZE;
-    this.origin.set(
-      Math.max(16, (width - mapW) / 2),
-      Math.max(48, (height - mapH) / 2 - 16),
+    const playH = height - MENU_BAR_HEIGHT;
+    this.menuBar
+      .clear()
+      .rect(0, playH, width, MENU_BAR_HEIGHT)
+      .fill(0x1d1d36)
+      .stroke({ width: 2, color: 0x2e2e4a });
+
+    const prevW = this.tileW;
+    const prevH = this.tileH;
+    this.tileW = Math.max(8, width / EXPLORE_COLS);
+    this.tileH = Math.max(8, playH / EXPLORE_ROWS);
+    this.playerOffset.set(
+      this.playerOffset.x * (this.tileW / prevW),
+      this.playerOffset.y * (this.tileH / prevH),
     );
+
+    const mapW = EXPLORE_COLS * this.tileW;
+    const mapH = EXPLORE_ROWS * this.tileH;
+    this.origin.set((width - mapW) / 2, (playH - mapH) / 2);
 
     this.buildTileSprites();
     this.positionPlayer();
 
-    this.hint.anchor.set(0.5);
-    this.hint.position.set(width / 2, this.origin.y + mapH + 24);
+    this.menu.position.set(
+      width / 2 - this.menu.width / 2,
+      playH + (MENU_BAR_HEIGHT - this.menu.height) / 2,
+    );
     this.container.hitArea = new Rectangle(0, 0, width, height);
   };
 
@@ -108,22 +134,28 @@ export class ExploreScene implements Scene {
 
     for (let y = 0; y < EXPLORE_ROWS; y++) {
       for (let x = 0; x < EXPLORE_COLS; x++) {
+        const char = EXPLORE_LAYOUT[y][x];
+        if (char !== "." && char !== ",") {
+          this.addTileSprite(exploreGrassKey(x, y), x, y);
+        }
         const key = exploreTileKey(x, y);
         if (key === null) continue;
-        const texture = this.ground[key];
-        if (!texture) continue;
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.5);
-        sprite.scale.set(
-          EXPLORE_TILE_SIZE / Math.max(texture.width, texture.height),
-        );
-        sprite.position.set(
-          this.origin.x + (x + 0.5) * EXPLORE_TILE_SIZE,
-          this.origin.y + (y + 0.5) * EXPLORE_TILE_SIZE,
-        );
-        this.tileLayer.addChild(sprite);
+        this.addTileSprite(key, x, y);
       }
     }
+  }
+
+  private addTileSprite(key: string, x: number, y: number): void {
+    const texture = this.ground[key];
+    if (!texture) return;
+    const sprite = new Sprite(texture);
+    sprite.anchor.set(0.5);
+    sprite.scale.set(this.tileW / texture.width, this.tileH / texture.height);
+    sprite.position.set(
+      this.origin.x + (x + 0.5) * this.tileW,
+      this.origin.y + (y + 0.5) * this.tileH,
+    );
+    this.tileLayer.addChild(sprite);
   }
 
   private readonly onKeyDown = (e: KeyboardEvent): void => {
@@ -137,8 +169,8 @@ export class ExploreScene implements Scene {
     const tile = this.toTile(e.global);
     if (!tile || isExploreBlocked(tile.x, tile.y)) return;
     const from: Tile = {
-      x: Math.floor(this.playerOffset.x / EXPLORE_TILE_SIZE),
-      y: Math.floor(this.playerOffset.y / EXPLORE_TILE_SIZE),
+      x: Math.floor(this.playerOffset.x / this.tileW),
+      y: Math.floor(this.playerOffset.y / this.tileH),
     };
     const path = findPath(from, tile, EXPLORE_COLS, EXPLORE_ROWS, (t) =>
       isExploreBlocked(t.x, t.y),
@@ -147,8 +179,8 @@ export class ExploreScene implements Scene {
   };
 
   private toTile(p: Point): Tile | null {
-    const x = Math.floor((p.x - this.origin.x) / EXPLORE_TILE_SIZE);
-    const y = Math.floor((p.y - this.origin.y) / EXPLORE_TILE_SIZE);
+    const x = Math.floor((p.x - this.origin.x) / this.tileW);
+    const y = Math.floor((p.y - this.origin.y) / this.tileH);
     if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;
     return { x, y };
   }
@@ -160,8 +192,8 @@ export class ExploreScene implements Scene {
     }
 
     const target = this.path[0];
-    const targetX = (target.x + 0.5) * EXPLORE_TILE_SIZE;
-    const targetY = (target.y + 0.5) * EXPLORE_TILE_SIZE;
+    const targetX = (target.x + 0.5) * this.tileW;
+    const targetY = (target.y + 0.5) * this.tileH;
     const dx = targetX - this.playerOffset.x;
     const dy = targetY - this.playerOffset.y;
     const dist = Math.hypot(dx, dy);
@@ -193,7 +225,7 @@ export class ExploreScene implements Scene {
   }
 
   private positionPlayer(): void {
-    this.player.scale.set((EXPLORE_TILE_SIZE * 1.5) / SPRITE_FRAME_PX);
+    this.player.scale.set((this.tileH * 1.5) / SPRITE_FRAME_PX);
     this.player.position.set(
       this.origin.x + this.playerOffset.x,
       this.origin.y + this.playerOffset.y,

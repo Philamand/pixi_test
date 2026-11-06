@@ -13,10 +13,16 @@ const BUTTON_GAP = 8;
 export class ActionMenu extends Container {
   private buttons: Container[] = [];
   private onSelect: ((id: string) => void) | null = null;
+  private orientation: "vertical" | "horizontal" = "vertical";
 
-  show(items: MenuItem[], onSelect: (id: string) => void): void {
+  show(
+    items: MenuItem[],
+    onSelect: (id: string) => void,
+    orientation: "vertical" | "horizontal" = "vertical",
+  ): void {
     this.clear();
     this.onSelect = onSelect;
+    this.orientation = orientation;
     items.forEach((item, index) => {
       this.addChild(this.createButton(item, index));
     });
@@ -35,7 +41,11 @@ export class ActionMenu extends Container {
 
   private createButton(item: MenuItem, index: number): Container {
     const button = new Container();
-    button.y = index * (BUTTON_HEIGHT + BUTTON_GAP);
+    if (this.orientation === "horizontal") {
+      button.x = index * (BUTTON_WIDTH + BUTTON_GAP);
+    } else {
+      button.y = index * (BUTTON_HEIGHT + BUTTON_GAP);
+    }
 
     const bg = new Graphics()
       .roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 8)
