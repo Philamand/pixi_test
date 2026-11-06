@@ -23,6 +23,47 @@ export function facingFromDelta(dx: number, dy: number): Facing {
   return dy >= 0 ? "down" : "up";
 }
 
+export function findPath(
+  origin: Tile,
+  target: Tile,
+  cols: number,
+  rows: number,
+  isBlocked: (t: Tile) => boolean,
+): Tile[] | null {
+  if (isBlocked(target)) return null;
+  const prev = new Map<string, Tile>();
+  const queue: Tile[] = [origin];
+  prev.set(tileKey(origin), origin);
+  const dirs = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ];
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    if (cur.x === target.x && cur.y === target.y) {
+      const path: Tile[] = [];
+      let node: Tile | undefined = cur;
+      while (node && !(node.x === origin.x && node.y === origin.y)) {
+        path.unshift(node);
+        node = prev.get(tileKey(node));
+      }
+      return path;
+    }
+    for (const d of dirs) {
+      const next = { x: cur.x + d.x, y: cur.y + d.y };
+      if (next.x < 0 || next.y < 0 || next.x >= cols || next.y >= rows)
+        continue;
+      const key = tileKey(next);
+      if (prev.has(key) || isBlocked(next)) continue;
+      prev.set(key, cur);
+      queue.push(next);
+    }
+  }
+  return null;
+}
+
 export function tilesWithinRange(
   origin: Tile,
   range: number,

@@ -2,8 +2,10 @@ import {
   AnimatedSprite,
   Application,
   Container,
+  FederatedPointerEvent,
   Graphics,
   Point,
+  Rectangle,
   Sprite,
   Text,
   Ticker,
@@ -22,25 +24,14 @@ import {
   isExploreBlocked,
 } from "../data/explore";
 import type { Scene } from "../game/Scene";
-import { facingFromDelta, type Facing } from "../utils/grid";
+import {
+  facingFromDelta,
+  findPath,
+  type Facing,
+  type Tile,
+} from "../utils/grid";
 
 const SPEED_PX_PER_MS = 0.18;
-const PLAYER_RADIUS = 12;
-
-const MOVE_KEYS = new Set([
-  "ArrowUp",
-  "ArrowDown",
-  "ArrowLeft",
-  "ArrowRight",
-  "w",
-  "s",
-  "a",
-  "d",
-  "W",
-  "S",
-  "A",
-  "D",
-]);
 
 export class ExploreScene implements Scene {
   readonly container = new Container();
@@ -50,11 +41,11 @@ export class ExploreScene implements Scene {
   private readonly player: AnimatedSprite;
   private facing: Facing = "down";
   private readonly hint = new Text({
-    text: "WASD / Arrow keys to move — Esc for menu",
+    text: "Click or tap to move \u2014 Esc for menu",
     style: { fill: 0xccccdd, fontSize: 14, align: "center" },
   });
 
-  private readonly keys = new Set<string>();
+  private path: Tile[] = [];
   private readonly playerOffset = new Point(
     (EXPLORE_SPAWN.x + 0.5) * EXPLORE_TILE_SIZE,
     (EXPLORE_SPAWN.y + 0.5) * EXPLORE_TILE_SIZE,
@@ -76,21 +67,20 @@ export class ExploreScene implements Scene {
   enter(): void {
     this.container.addChild(this.bg, this.tileLayer, this.player, this.hint);
 
+    this.container.eventMode = "static";
+    this.container.on("pointerdown", this.onPointerDown);
     this.app.renderer.on("resize", this.layout);
     window.addEventListener("keydown", this.onKeyDown);
-    window.addEventListener("keyup", this.onKeyUp);
-    window.addEventListener("blur", this.clearKeys);
     this.app.ticker.add(this.update);
     this.layout();
   }
 
   exit(): void {
+    this.container.off("pointerdown", this.onPointerDown);
     this.app.renderer.off("resize", this.layout);
     window.removeEventListener("keydown", this.onKeyDown);
-    window.removeEventListener("keyup", this.onKeyUp);
-    window.removeEventListener("blur", this.clearKeys);
     this.app.ticker.remove(this.update);
-    this.keys.clear();
+    this.path = [];
   }
 
   private readonly layout = (): void => {
@@ -110,6 +100,7 @@ export class ExploreScene implements Scene {
 
     this.hint.anchor.set(0.5);
     this.hint.position.set(width / 2, this.origin.y + mapH + 24);
+    this.container.hitArea = new Rectangle(0, 0, width, height);
   };
 
   private buildTileSprites(): void {
@@ -139,52 +130,53 @@ export class ExploreScene implements Scene {
     if (e.key === "Escape") {
       e.preventDefault();
       this.onExit();
-      return;
     }
-    if (!MOVE_KEYS.has(e.key)) return;
-    e.preventDefault();
-    this.keys.add(e.key);
   };
 
-  private readonly onKeyUp = (e: KeyboardEvent): void => {
-    this.keys.delete(e.key);
+  private readonly onPointerDown = (e: FederatedPointerEvent): void => {
+    const tile = this.toTile(e.global);
+    if (!tile || isExploreBlocked(tile.x, tile.y)) return;
+    const from: Tile = {
+      x: Math.floor(this.playerOffset.x / EXPLORE_TILE_SIZE),
+      y: Math.floor(this.playerOffset.y / EXPLORE_TILE_SIZE),
+    };
+    const path = findPath(from, tile, EXPLORE_COLS, EXPLORE_ROWS, (t) =>
+      isExploreBlocked(t.x, t.y),
+    );
+    if (path) this.path = path;
   };
 
-  private readonly clearKeys = (): void => {
-    this.keys.clear();
-  };
+  private toTile(p: Point): Tile | null {
+    const x = Math.floor((p.x - this.origin.x) / EXPLORE_TILE_SIZE);
+    const y = Math.floor((p.y - this.origin.y) / EXPLORE_TILE_SIZE);
+    if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;
+    return { x, y };
+  }
 
   private readonly update = (t: Ticker): void => {
-    let dx = 0;
-    let dy = 0;
-    if (this.keys.has("ArrowLeft") || this.keys.has("a") || this.keys.has("A"))
-      dx -= 1;
-    if (this.keys.has("ArrowRight") || this.keys.has("d") || this.keys.has("D"))
-      dx += 1;
-    if (this.keys.has("ArrowUp") || this.keys.has("w") || this.keys.has("W"))
-      dy -= 1;
-    if (this.keys.has("ArrowDown") || this.keys.has("s") || this.keys.has("S"))
-      dy += 1;
-    if (dx === 0 && dy === 0) {
+    if (this.path.length === 0) {
       this.setPlayerAnimation(false);
       return;
     }
-    if (dx !== 0 && dy !== 0) {
-      dx *= Math.SQRT1_2;
-      dy *= Math.SQRT1_2;
-    }
-    this.facing = facingFromDelta(dx, dy);
 
+    const target = this.path[0];
+    const targetX = (target.x + 0.5) * EXPLORE_TILE_SIZE;
+    const targetY = (target.y + 0.5) * EXPLORE_TILE_SIZE;
+    const dx = targetX - this.playerOffset.x;
+    const dy = targetY - this.playerOffset.y;
+    const dist = Math.hypot(dx, dy);
     const step = SPEED_PX_PER_MS * t.deltaMS;
-    let absX = this.origin.x + this.playerOffset.x;
-    let absY = this.origin.y + this.playerOffset.y;
 
-    const nextX = absX + dx * step;
-    if (!this.collides(nextX, absY)) absX = nextX;
-    const nextY = absY + dy * step;
-    if (!this.collides(absX, nextY)) absY = nextY;
-
-    this.playerOffset.set(absX - this.origin.x, absY - this.origin.y);
+    this.facing = facingFromDelta(dx, dy);
+    if (dist <= step) {
+      this.playerOffset.set(targetX, targetY);
+      this.path.shift();
+    } else {
+      this.playerOffset.set(
+        this.playerOffset.x + (dx / dist) * step,
+        this.playerOffset.y + (dy / dist) * step,
+      );
+    }
     this.positionPlayer();
     this.setPlayerAnimation(true);
   };
@@ -198,27 +190,6 @@ export class ExploreScene implements Scene {
       this.player.gotoAndPlay(0);
     }
     this.player.animationSpeed = moving ? 0.2 : 0.1;
-  }
-
-  private collides(x: number, y: number): boolean {
-    const minTx = Math.floor(
-      (x - PLAYER_RADIUS - this.origin.x) / EXPLORE_TILE_SIZE,
-    );
-    const maxTx = Math.floor(
-      (x + PLAYER_RADIUS - this.origin.x) / EXPLORE_TILE_SIZE,
-    );
-    const minTy = Math.floor(
-      (y - PLAYER_RADIUS - this.origin.y) / EXPLORE_TILE_SIZE,
-    );
-    const maxTy = Math.floor(
-      (y + PLAYER_RADIUS - this.origin.y) / EXPLORE_TILE_SIZE,
-    );
-    for (let ty = minTy; ty <= maxTy; ty++) {
-      for (let tx = minTx; tx <= maxTx; tx++) {
-        if (isExploreBlocked(tx, ty)) return true;
-      }
-    }
-    return false;
   }
 
   private positionPlayer(): void {

@@ -76,7 +76,7 @@ src/
 
 Choose **Explore** on the selection screen to walk the hero (animated
 assassin spritesheets from `assets/sprites/assassin/`) freely around
-the summer map (hold WASD or arrow keys; trees, ponds, fences, rocks
-and the map edge block movement via tile collision). Press **Esc** to return
+the summer map (click or tap a tile to walk there; the hero follows a
+path around trees, ponds, fences, rocks and the map edge). Press **Esc** to return
 to the selection screen. The map layout lives in `src/data/explore.ts` and
 uses `SUMMER_TILE` keys from the Simple Summer tiles.
