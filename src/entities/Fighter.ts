@@ -16,6 +16,7 @@ export interface Skill {
   magical?: boolean;
   healAmount?: number;
   targetAlly?: boolean;
+  projectile?: "fireball";
 }
 
 export interface FighterStats {

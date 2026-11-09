@@ -16,6 +16,7 @@ export type CharacterSprites = {
 export interface TilemapSet {
   summer: TileTextures;
   sprites: Record<SpriteSetName, CharacterSprites>;
+  fireball: Texture[];
 }
 
 const summerTileUrls = import.meta.glob<string>(
@@ -43,6 +44,24 @@ async function loadSummerTiles(): Promise<TileTextures> {
     }),
   );
   return Object.fromEntries(entries);
+}
+
+const fireballUrls = import.meta.glob<string>(
+  "../assets/sprites/fireball/*.png",
+  { eager: true, query: "?url", import: "default" },
+);
+
+async function loadFireball(): Promise<Texture[]> {
+  const entries = await Promise.all(
+    Object.entries(fireballUrls).map(async ([path, url]) => {
+      const texture = await Assets.load<Texture>(url);
+      texture.source.scaleMode = "nearest";
+      const frame = Number(path.match(/_(\d+)\.png$/i)?.[1] ?? 0);
+      return [frame, texture] as const;
+    }),
+  );
+  entries.sort((a, b) => a[0] - b[0]);
+  return entries.map(([, texture]) => texture);
 }
 
 const SPRITE_FOLDERS = Object.values(SPRITE_SET);
@@ -139,9 +158,10 @@ async function loadSprites(): Promise<TilemapSet["sprites"]> {
 }
 
 export async function loadTilemaps(): Promise<TilemapSet> {
-  const [summer, sprites] = await Promise.all([
+  const [summer, sprites, fireball] = await Promise.all([
     loadSummerTiles(),
     loadSprites(),
+    loadFireball(),
   ]);
-  return { summer, sprites };
+  return { summer, sprites, fireball };
 }
