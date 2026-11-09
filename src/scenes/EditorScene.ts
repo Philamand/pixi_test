@@ -160,6 +160,15 @@ export class EditorScene implements Scene {
       ],
       (id) => {
         this.tool = id as Tool;
+        const prefix = this.tool === "objects" ? "prop_" : "ground_";
+        if (this.tool !== "portal") {
+          const keys = Object.keys(this.ground).filter((k) =>
+            k.startsWith(prefix),
+          );
+          if (!this.selectedTile || !this.selectedTile.startsWith(prefix)) {
+            this.selectedTile = keys.sort()[0] ?? null;
+          }
+        }
         this.refresh();
       },
       "horizontal",
@@ -309,7 +318,10 @@ export class EditorScene implements Scene {
 
   private buildPalette(): void {
     for (const child of this.paletteInner.removeChildren()) child.destroy();
-    const keys = Object.keys(this.ground).sort();
+    const prefix = this.tool === "objects" ? "prop_" : "ground_";
+    const keys = Object.keys(this.ground)
+      .filter((k) => k.startsWith(prefix))
+      .sort();
     keys.forEach((key, i) => {
       const cell = new Container();
       const col = i % PALETTE_COLS;
