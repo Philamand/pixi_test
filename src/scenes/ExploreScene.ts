@@ -18,9 +18,9 @@ import {
   EXPLORE_TILE_SIZE,
   type ExploreMap,
   type ExplorePortal,
-  exploreGrassKey,
+  exploreGroundKey,
+  exploreObjectKey,
   explorePortalAt,
-  exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
 import type { Scene } from "../game/Scene";
@@ -154,11 +154,8 @@ export class ExploreScene implements Scene {
 
     for (let y = 0; y < this.map.rows; y++) {
       for (let x = 0; x < this.map.cols; x++) {
-        const char = this.map.layout[y][x];
-        if (char !== "." && char !== ",") {
-          this.addTileSprite(exploreGrassKey(x, y), x, y);
-        }
-        const key = exploreTileKey(this.map, x, y);
+        this.addTileSprite(exploreGroundKey(this.map, x, y), x, y);
+        const key = exploreObjectKey(this.map, x, y);
         if (key === null) continue;
         this.addTileSprite(key, x, y);
       }

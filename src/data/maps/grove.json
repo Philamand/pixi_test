@@ -1,23 +1,56 @@
 {
   "id": "grove",
-  "layout": [
+  "cols": 10,
+  "rows": 16,
+  "spawn": {
+    "x": 1,
+    "y": 9
+  },
+  "portals": [
+    {
+      "x": 0,
+      "y": 9,
+      "target": "meadow",
+      "spawn": {
+        "x": 8,
+        "y": 9
+      }
+    }
+  ],
+  "ground": [
+    "gggggggggg",
+    "gggggggggg",
+    "gggggggggg",
+    "gggwwggggg",
+    "gggsssssgg",
+    "gggsswwggg",
+    "gggggggggg",
+    "gggggggggg",
+    "gggggggggg",
+    "gggggggggg",
+    "gggggggggg",
+    "ggssssssgg",
+    "gggggggggg",
+    "gggggggggg",
+    "gggggggggg",
+    "gggggggggg"
+  ],
+  "objects": [
     "TTTTTTTTTT",
     "T........T",
     "T.....t..T",
-    "T..WW....T",
-    "T..,,,,,.T",
-    "T..,,WW..T",
+    "T........T",
+    "T........T",
+    "T........T",
     "T........T",
     "T...###..T",
     "T...###..T",
     "P........T",
     "T...t....T",
-    "T.,,,,,,.T",
+    "T........T",
     "T........T",
     "T..r...b.T",
     "T..F.....T",
     "TTTTTTTTTT"
-  ],
-  "spawn": { "x": 1, "y": 9 },
-  "portals": [{ "x": 0, "y": 9, "target": "meadow", "spawn": { "x": 8, "y": 9 } }]
+  ]
 }
