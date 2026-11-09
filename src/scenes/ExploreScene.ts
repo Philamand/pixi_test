@@ -18,9 +18,9 @@ import {
   EXPLORE_TILE_SIZE,
   type ExploreMap,
   type ExplorePortal,
-  exploreGrassKey,
+  exploreGroundKey,
+  exploreObjectKey,
   explorePortalAt,
-  exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
 import type { Scene } from "../game/Scene";
@@ -65,7 +65,7 @@ export class ExploreScene implements Scene {
     private readonly map: ExploreMap,
     private readonly onExit: () => void,
     private readonly onTeleport: (portal: ExplorePortal) => void,
-    spawn: Tile = map.spawn,
+    spawn: Tile,
   ) {
     this.playerOffset = new Point(
       (spawn.x + 0.5) * EXPLORE_TILE_SIZE,
@@ -154,13 +154,10 @@ export class ExploreScene implements Scene {
 
     for (let y = 0; y < this.map.rows; y++) {
       for (let x = 0; x < this.map.cols; x++) {
-        const char = this.map.layout[y][x];
-        if (char !== "." && char !== ",") {
-          this.addTileSprite(exploreGrassKey(x, y), x, y);
-        }
-        const key = exploreTileKey(this.map, x, y);
-        if (key === null) continue;
-        this.addTileSprite(key, x, y);
+        const ground = exploreGroundKey(this.map, x, y);
+        if (ground !== null) this.addTileSprite(ground, x, y);
+        const object = exploreObjectKey(this.map, x, y);
+        if (object !== null) this.addTileSprite(object, x, y);
       }
     }
   }
