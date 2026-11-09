@@ -24,7 +24,6 @@ type Tool = "ground" | "objects" | "portal";
 interface EditableMap {
   id: string;
   portals: ExplorePortal[];
-  blocked: string[];
   ground: (string | null)[][];
   objects: (string | null)[][];
 }
@@ -71,7 +70,6 @@ export class EditorScene implements Scene {
       this.maps[id] = {
         id,
         portals: map.portals.map((p) => ({ ...p })),
-        blocked: [...map.blocked],
         ground: map.ground.map((row) => [...row]),
         objects: map.objects.map((row) => [...row]),
       };
@@ -120,8 +118,6 @@ export class EditorScene implements Scene {
     if (e.key === "Escape") {
       e.preventDefault();
       this.onExit();
-    } else if (e.key === "s" || e.key === "S") {
-      this.toggleBlocked();
     } else if (e.key === "w" || e.key === "W") {
       this.saveCurrent();
     }
@@ -398,22 +394,9 @@ export class EditorScene implements Scene {
       this.statusText.text = "";
       return;
     }
-    const blocked =
-      this.selectedTile && map.blocked.includes(this.selectedTile)
-        ? "blocked"
-        : "walkable";
     this.statusText.text = `Map: ${map.id} | Tool: ${this.tool} | Tile: ${
       this.selectedTile ?? "(none)"
-    } (${blocked}) | Portals: ${map.portals.length} | Click: paint, Right-click: erase | S: toggle blocked, W: save`;
-  }
-
-  private toggleBlocked(): void {
-    const map = this.current;
-    if (!map || !this.selectedTile) return;
-    const i = map.blocked.indexOf(this.selectedTile);
-    if (i >= 0) map.blocked.splice(i, 1);
-    else map.blocked.push(this.selectedTile);
-    this.updateStatus();
+    } | Portals: ${map.portals.length} | Click: paint, Right-click: erase | W: save | Objects block, ground never does`;
   }
 
   private saveCurrent(): void {
@@ -422,7 +405,6 @@ export class EditorScene implements Scene {
     const data = {
       id: map.id,
       portals: map.portals,
-      blocked: map.blocked,
       ground: map.ground,
       objects: map.objects,
     };
@@ -470,7 +452,6 @@ export class EditorScene implements Scene {
     this.maps[id] = {
       id,
       portals: [],
-      blocked: [],
       ground: empty(),
       objects: empty(),
     };
@@ -492,7 +473,6 @@ export class EditorScene implements Scene {
           const map: EditableMap = {
             id: String(data.id),
             portals: data.portals ?? [],
-            blocked: data.blocked ?? [],
             ground: data.ground,
             objects: data.objects,
           };

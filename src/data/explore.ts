@@ -15,7 +15,6 @@ export interface ExploreMap {
   cols: number;
   rows: number;
   portals: ExplorePortal[];
-  blocked: ReadonlySet<string>;
   ground: (string | null)[][];
   objects: (string | null)[][];
 }
@@ -23,7 +22,6 @@ export interface ExploreMap {
 interface ExploreMapFile {
   id: string;
   portals?: ExplorePortal[];
-  blocked?: string[];
   ground: (string | null)[][];
   objects: (string | null)[][];
 }
@@ -65,7 +63,6 @@ function toExploreMap(file: ExploreMapFile): ExploreMap {
     cols: EXPLORE_COLS,
     rows: EXPLORE_ROWS,
     portals,
-    blocked: new Set(file.blocked ?? []),
     ground: file.ground,
     objects: file.objects,
   };
@@ -115,10 +112,7 @@ export function isExploreBlocked(
   y: number,
 ): boolean {
   if (x < 0 || y < 0 || x >= map.cols || y >= map.rows) return true;
-  return (
-    map.blocked.has(map.ground[y][x] ?? "") ||
-    map.blocked.has(map.objects[y][x] ?? "")
-  );
+  return map.objects[y][x] !== null;
 }
 
 export function explorePortalAt(
