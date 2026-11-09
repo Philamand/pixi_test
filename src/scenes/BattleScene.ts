@@ -160,11 +160,14 @@ export class BattleScene implements Scene {
   private layoutMenu(): void {
     const { width, height } = this.app.screen;
     const playH = height - MENU_BAR_HEIGHT;
-    const menuScale = Math.min(1, (width - 16) / Math.max(1, this.menu.width));
+    // Use local bounds: Container.width already includes the current scale,
+    // which would feed the previous scale back into this calculation.
+    const bounds = this.menu.getLocalBounds();
+    const menuScale = Math.min(1, (width - 16) / Math.max(1, bounds.width));
     this.menu.scale.set(menuScale);
     this.menu.position.set(
       8,
-      playH + (MENU_BAR_HEIGHT - this.menu.height * menuScale) / 2,
+      playH + (MENU_BAR_HEIGHT - bounds.height * menuScale) / 2,
     );
   }
 
