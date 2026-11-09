@@ -398,9 +398,11 @@ export class BattleScene implements Scene {
     this.pendingSkill = null;
     if (skill) f.spendMp(skill.mpCost);
 
-    const actions: Promise<void>[] = [this.lunge(f, target), f.attack()];
+    const actions: Promise<void>[] = [];
     if (skill?.projectile === "fireball") {
       actions.push(this.castFireball(f, target));
+    } else {
+      actions.push(this.lunge(f, target), f.attack());
     }
     await Promise.all(actions);
 
@@ -558,7 +560,7 @@ export class BattleScene implements Scene {
     return new Promise((resolve) => {
       const ball = new AnimatedSprite(this.fireball);
       ball.anchor.set(0.5);
-      const size = Math.max(this.tileW, this.tileH) * 1.5;
+      const size = Math.max(this.tileW, this.tileH) * 0.75;
       ball.scale.set(size / this.fireball[0].width);
       const start = this.tileCenter(from.tile);
       const end = this.tileCenter(to.tile);
