@@ -154,10 +154,10 @@ export class ExploreScene implements Scene {
 
     for (let y = 0; y < this.map.rows; y++) {
       for (let x = 0; x < this.map.cols; x++) {
-        this.addTileSprite(exploreGroundKey(this.map, x, y), x, y);
-        const key = exploreObjectKey(this.map, x, y);
-        if (key === null) continue;
-        this.addTileSprite(key, x, y);
+        const ground = exploreGroundKey(this.map, x, y);
+        if (ground !== null) this.addTileSprite(ground, x, y);
+        const object = exploreObjectKey(this.map, x, y);
+        if (object !== null) this.addTileSprite(object, x, y);
       }
     }
   }

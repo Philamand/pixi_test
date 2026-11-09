@@ -1,4 +1,3 @@
-import { SUMMER_TILE } from "./tiles";
 import type { Tile } from "../utils/grid";
 
 export const EXPLORE_TILE_SIZE = 48;
@@ -16,8 +15,9 @@ export interface ExploreMap {
   rows: number;
   spawn: Tile;
   portals: ExplorePortal[];
-  ground: string[];
-  objects: string[];
+  blocked: ReadonlySet<string>;
+  ground: (string | null)[][];
+  objects: (string | null)[][];
 }
 
 interface ExploreMapFile {
@@ -26,37 +26,17 @@ interface ExploreMapFile {
   rows: number;
   spawn: Tile;
   portals?: ExplorePortal[];
-  ground: string[];
-  objects: string[];
+  blocked?: string[];
+  ground: (string | null)[][];
+  objects: (string | null)[][];
 }
-
-const GROUND_LEGEND: Record<string, readonly string[]> = {
-  g: [SUMMER_TILE.grass, SUMMER_TILE.grassAlt, SUMMER_TILE.grassAlt2],
-  s: [SUMMER_TILE.sand],
-  w: SUMMER_TILE.pond,
-};
-
-const OBJECT_LEGEND: Record<string, readonly string[]> = {
-  T: [SUMMER_TILE.tree],
-  t: [SUMMER_TILE.treeSmall],
-  "#": [SUMMER_TILE.rock, SUMMER_TILE.rockAlt],
-  F: [SUMMER_TILE.fence],
-  r: [SUMMER_TILE.rockAlt],
-  b: [SUMMER_TILE.bush],
-  P: [],
-};
-
-const EMPTY_CELL = ".";
-const BLOCKED_GROUND = new Set(["w"]);
-const BLOCKED_OBJECTS = new Set(["T", "t", "#", "F", "r", "b"]);
 
 function validateLayer(
   mapId: string,
   layerName: string,
-  layer: string[],
+  layer: (string | null)[][],
   cols: number,
   rows: number,
-  legend: Record<string, readonly string[]>,
 ): void {
   if (layer.length !== rows)
     throw new Error(
@@ -67,40 +47,34 @@ function validateLayer(
       throw new Error(
         `Map "${mapId}": ${layerName} row ${y} has ${row.length} cols, expected ${cols}`,
       );
-    for (const char of row) {
-      if (char !== EMPTY_CELL && !(char in legend))
-        throw new Error(
-          `Map "${mapId}": unknown ${layerName} char "${char}" at row ${y}`,
-        );
-    }
   });
 }
 
 function toExploreMap(file: ExploreMapFile): ExploreMap {
-  validateLayer(
-    file.id,
-    "ground",
-    file.ground,
-    file.cols,
-    file.rows,
-    GROUND_LEGEND,
-  );
-  validateLayer(
-    file.id,
-    "objects",
-    file.objects,
-    file.cols,
-    file.rows,
-    OBJECT_LEGEND,
-  );
+  validateLayer(file.id, "ground", file.ground, file.cols, file.rows);
+  validateLayer(file.id, "objects", file.objects, file.cols, file.rows);
   const portals = file.portals ?? [];
   for (const portal of portals) {
-    if (file.objects[portal.y]?.[portal.x] !== "P")
+    if (
+      portal.x < 0 ||
+      portal.y < 0 ||
+      portal.x >= file.cols ||
+      portal.y >= file.rows
+    )
       throw new Error(
-        `Map "${file.id}": portal at (${portal.x},${portal.y}) needs a "P" object cell`,
+        `Map "${file.id}": portal at (${portal.x},${portal.y}) is out of bounds`,
       );
   }
-  return { ...file, portals };
+  return {
+    id: file.id,
+    cols: file.cols,
+    rows: file.rows,
+    spawn: file.spawn,
+    portals,
+    blocked: new Set(file.blocked ?? []),
+    ground: file.ground,
+    objects: file.objects,
+  };
 }
 
 const mapFiles = import.meta.glob<ExploreMapFile>("./maps/*.json", {
@@ -118,11 +92,9 @@ export function exploreGroundKey(
   map: ExploreMap,
   x: number,
   y: number,
-): string {
-  if (x < 0 || y < 0 || x >= map.cols || y >= map.rows)
-    return GROUND_LEGEND.g[0];
-  const options = GROUND_LEGEND[map.ground[y][x]] ?? GROUND_LEGEND.g;
-  return options[(x * 3 + y * 5) % options.length];
+): string | null {
+  if (x < 0 || y < 0 || x >= map.cols || y >= map.rows) return null;
+  return map.ground[y][x];
 }
 
 export function exploreObjectKey(
@@ -131,10 +103,7 @@ export function exploreObjectKey(
   y: number,
 ): string | null {
   if (x < 0 || y < 0 || x >= map.cols || y >= map.rows) return null;
-  const char = map.objects[y][x];
-  const options = OBJECT_LEGEND[char];
-  if (!options || options.length === 0) return null;
-  return options[(x * 3 + y * 5) % options.length];
+  return map.objects[y][x];
 }
 
 export function isExploreBlocked(
@@ -144,8 +113,8 @@ export function isExploreBlocked(
 ): boolean {
   if (x < 0 || y < 0 || x >= map.cols || y >= map.rows) return true;
   return (
-    BLOCKED_GROUND.has(map.ground[y][x]) ||
-    BLOCKED_OBJECTS.has(map.objects[y][x])
+    map.blocked.has(map.ground[y][x] ?? "") ||
+    map.blocked.has(map.objects[y][x] ?? "")
   );
 }
 
