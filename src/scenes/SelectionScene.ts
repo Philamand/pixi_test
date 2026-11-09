@@ -2,7 +2,7 @@ import { Application, Container, Graphics, Text } from "pixi.js";
 import type { Scene } from "../game/Scene";
 import { ActionMenu, type MenuItem } from "../ui/ActionMenu";
 
-export type SelectionMode = "combat" | "explore";
+export type SelectionMode = "combat" | "explore" | "editor";
 
 export class SelectionScene implements Scene {
   readonly container = new Container();
@@ -31,6 +31,7 @@ export class SelectionScene implements Scene {
     const items: MenuItem[] = [
       { id: "combat", label: "Combat" },
       { id: "explore", label: "Explore" },
+      { id: "editor", label: "Map Editor" },
     ];
     this.menu.show(items, (id) => this.onSelect(id as SelectionMode));
 

@@ -7,6 +7,7 @@ import {
   type ExploreMap,
 } from "../data/explore";
 import { BattleScene } from "../scenes/BattleScene";
+import { EditorScene } from "../scenes/EditorScene";
 import { ExploreScene } from "../scenes/ExploreScene";
 import { SelectionScene, type SelectionMode } from "../scenes/SelectionScene";
 import { SceneManager } from "./SceneManager";
@@ -30,9 +31,17 @@ export class Game {
   private startMode(mode: SelectionMode): void {
     if (mode === "combat") {
       this.startBattle();
+    } else if (mode === "editor") {
+      this.startEditor();
     } else {
       this.startExplore();
     }
+  }
+
+  private startEditor(): void {
+    this.scenes.switchTo(
+      new EditorScene(this.app, this.tilemaps.summer, () => this.start()),
+    );
   }
 
   private startBattle(): void {
