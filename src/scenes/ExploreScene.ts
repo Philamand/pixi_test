@@ -15,12 +15,11 @@ import {
   type TileTextures,
 } from "../assets";
 import {
-  EXPLORE_COLS,
-  EXPLORE_LAYOUT,
-  EXPLORE_ROWS,
-  EXPLORE_SPAWN,
   EXPLORE_TILE_SIZE,
+  type ExploreMap,
+  type ExplorePortal,
   exploreGrassKey,
+  explorePortalAt,
   exploreTileKey,
   isExploreBlocked,
 } from "../data/explore";
@@ -42,25 +41,31 @@ export class ExploreScene implements Scene {
   private readonly bg = new Graphics();
   private readonly menuBar = new Graphics();
   private readonly tileLayer = new Container();
+  private readonly markerLayer = new Container();
   private readonly player: AnimatedSprite;
   private readonly menu = new ActionMenu();
   private facing: Facing = "down";
+  private teleported = false;
 
   private path: Tile[] = [];
   private tileW = EXPLORE_TILE_SIZE;
   private tileH = EXPLORE_TILE_SIZE;
-  private readonly playerOffset = new Point(
-    (EXPLORE_SPAWN.x + 0.5) * EXPLORE_TILE_SIZE,
-    (EXPLORE_SPAWN.y + 0.5) * EXPLORE_TILE_SIZE,
-  );
+  private readonly playerOffset: Point;
   private origin = new Point(0, 0);
 
   constructor(
     private readonly app: Application,
     private readonly ground: TileTextures,
     private readonly animations: CharacterSprites,
+    private readonly map: ExploreMap,
     private readonly onExit: () => void,
+    private readonly onTeleport: (portal: ExplorePortal) => void,
+    spawn: Tile = map.spawn,
   ) {
+    this.playerOffset = new Point(
+      (spawn.x + 0.5) * EXPLORE_TILE_SIZE,
+      (spawn.y + 0.5) * EXPLORE_TILE_SIZE,
+    );
     this.player = new AnimatedSprite(animations.directions.down.idle);
     this.player.anchor.set(0.5, 0.8);
     this.player.animationSpeed = 0.1;
@@ -72,6 +77,7 @@ export class ExploreScene implements Scene {
       this.bg,
       this.menuBar,
       this.tileLayer,
+      this.markerLayer,
       this.player,
       this.menu,
     );
@@ -108,18 +114,19 @@ export class ExploreScene implements Scene {
 
     const prevW = this.tileW;
     const prevH = this.tileH;
-    this.tileW = Math.max(8, width / EXPLORE_COLS);
-    this.tileH = Math.max(8, playH / EXPLORE_ROWS);
+    this.tileW = Math.max(8, width / this.map.cols);
+    this.tileH = Math.max(8, playH / this.map.rows);
     this.playerOffset.set(
       this.playerOffset.x * (this.tileW / prevW),
       this.playerOffset.y * (this.tileH / prevH),
     );
 
-    const mapW = EXPLORE_COLS * this.tileW;
-    const mapH = EXPLORE_ROWS * this.tileH;
+    const mapW = this.map.cols * this.tileW;
+    const mapH = this.map.rows * this.tileH;
     this.origin.set((width - mapW) / 2, (playH - mapH) / 2);
 
     this.buildTileSprites();
+    this.buildMarkers();
     this.positionPlayer();
 
     this.menu.position.set(
@@ -132,16 +139,32 @@ export class ExploreScene implements Scene {
   private buildTileSprites(): void {
     for (const child of this.tileLayer.removeChildren()) child.destroy();
 
-    for (let y = 0; y < EXPLORE_ROWS; y++) {
-      for (let x = 0; x < EXPLORE_COLS; x++) {
-        const char = EXPLORE_LAYOUT[y][x];
+    for (let y = 0; y < this.map.rows; y++) {
+      for (let x = 0; x < this.map.cols; x++) {
+        const char = this.map.layout[y][x];
         if (char !== "." && char !== ",") {
           this.addTileSprite(exploreGrassKey(x, y), x, y);
         }
-        const key = exploreTileKey(x, y);
+        const key = exploreTileKey(this.map, x, y);
         if (key === null) continue;
         this.addTileSprite(key, x, y);
       }
+    }
+  }
+
+  private buildMarkers(): void {
+    for (const child of this.markerLayer.removeChildren()) child.destroy();
+    const radius = Math.min(this.tileW, this.tileH) * 0.35;
+    for (const portal of this.map.portals) {
+      const marker = new Graphics()
+        .circle(0, 0, radius)
+        .fill({ color: 0x7fd4ff, alpha: 0.45 })
+        .stroke({ width: 2, color: 0xffffff, alpha: 0.7 });
+      marker.position.set(
+        this.origin.x + (portal.x + 0.5) * this.tileW,
+        this.origin.y + (portal.y + 0.5) * this.tileH,
+      );
+      this.markerLayer.addChild(marker);
     }
   }
 
@@ -167,13 +190,13 @@ export class ExploreScene implements Scene {
 
   private readonly onPointerDown = (e: FederatedPointerEvent): void => {
     const tile = this.toTile(e.global);
-    if (!tile || isExploreBlocked(tile.x, tile.y)) return;
+    if (!tile || isExploreBlocked(this.map, tile.x, tile.y)) return;
     const from: Tile = {
       x: Math.floor(this.playerOffset.x / this.tileW),
       y: Math.floor(this.playerOffset.y / this.tileH),
     };
-    const path = findPath(from, tile, EXPLORE_COLS, EXPLORE_ROWS, (t) =>
-      isExploreBlocked(t.x, t.y),
+    const path = findPath(from, tile, this.map.cols, this.map.rows, (t) =>
+      isExploreBlocked(this.map, t.x, t.y),
     );
     if (path) this.path = path;
   };
@@ -181,7 +204,7 @@ export class ExploreScene implements Scene {
   private toTile(p: Point): Tile | null {
     const x = Math.floor((p.x - this.origin.x) / this.tileW);
     const y = Math.floor((p.y - this.origin.y) / this.tileH);
-    if (x < 0 || y < 0 || x >= EXPLORE_COLS || y >= EXPLORE_ROWS) return null;
+    if (x < 0 || y < 0 || x >= this.map.cols || y >= this.map.rows) return null;
     return { x, y };
   }
 
@@ -211,7 +234,19 @@ export class ExploreScene implements Scene {
     }
     this.positionPlayer();
     this.setPlayerAnimation(true);
+    this.checkPortal();
   };
+
+  private checkPortal(): void {
+    if (this.teleported) return;
+    const tileX = Math.floor(this.playerOffset.x / this.tileW);
+    const tileY = Math.floor(this.playerOffset.y / this.tileH);
+    const portal = explorePortalAt(this.map, tileX, tileY);
+    if (portal) {
+      this.teleported = true;
+      this.onTeleport(portal);
+    }
+  }
 
   private setPlayerAnimation(moving: boolean): void {
     const anim = moving

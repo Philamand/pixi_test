@@ -1,5 +1,11 @@
 import type { Application } from "pixi.js";
 import type { TilemapSet } from "../assets";
+import {
+  EXPLORE_MAP_START,
+  EXPLORE_MAPS,
+  type ExploreMap,
+} from "../data/explore";
+import type { Tile } from "../utils/grid";
 import { BattleScene } from "../scenes/BattleScene";
 import { ExploreScene } from "../scenes/ExploreScene";
 import { SelectionScene, type SelectionMode } from "../scenes/SelectionScene";
@@ -41,13 +47,22 @@ export class Game {
     );
   }
 
-  private startExplore(): void {
+  private startExplore(
+    map: ExploreMap = EXPLORE_MAP_START,
+    spawn?: Tile,
+  ): void {
     this.scenes.switchTo(
       new ExploreScene(
         this.app,
         this.tilemaps.summer,
         this.tilemaps.sprites.assassin,
+        map,
         () => this.start(),
+        (portal) => {
+          const target = EXPLORE_MAPS[portal.target];
+          if (target) this.startExplore(target, portal.spawn);
+        },
+        spawn,
       ),
     );
   }
