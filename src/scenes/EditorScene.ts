@@ -44,6 +44,8 @@ export class EditorScene implements Scene {
   private readonly paletteViewport = new Container();
   private readonly paletteMask = new Graphics();
   private readonly paletteInner = new Container();
+  private readonly scrollUpBtn = new Container();
+  private readonly scrollDownBtn = new Container();
   private readonly statusText = new Text({
     text: "",
     style: { fill: 0xaaaacc, fontSize: 13 },
@@ -97,12 +99,38 @@ export class EditorScene implements Scene {
       this.paletteViewport,
       this.statusText,
     );
-    this.paletteViewport.addChild(this.paletteMask, this.paletteInner);
+    this.paletteViewport.addChild(
+      this.paletteMask,
+      this.paletteInner,
+      this.scrollUpBtn,
+      this.scrollDownBtn,
+    );
 
+    this.container.eventMode = "static";
     this.gridLayer.eventMode = "static";
     this.gridLayer.on("pointerdown", this.onGridPointer);
     this.paletteViewport.eventMode = "static";
     this.paletteViewport.on("wheel", this.onPaletteWheel);
+
+    for (const [btn, dir] of [
+      [this.scrollUpBtn, -1],
+      [this.scrollDownBtn, 1],
+    ] as const) {
+      const bg = new Graphics()
+        .roundRect(0, 0, PALETTE_W - 16, 22, 4)
+        .fill(0x2e4a7a)
+        .stroke({ width: 1, color: 0x6f9fdf });
+      const label = new Text({
+        text: dir < 0 ? "▲ scroll" : "▼ scroll",
+        style: { fill: 0xffffff, fontSize: 12 },
+      });
+      label.anchor.set(0.5);
+      label.position.set((PALETTE_W - 16) / 2, 11);
+      btn.addChild(bg, label);
+      btn.eventMode = "static";
+      btn.cursor = "pointer";
+      btn.on("pointerdown", () => this.scrollPalette(dir * 160));
+    }
 
     this.app.renderer.on("resize", this.layout);
     window.addEventListener("keydown", this.onKeyDown);
@@ -222,6 +250,8 @@ export class EditorScene implements Scene {
       .fill(0x1d1d36);
     this.paletteInner.mask = this.paletteMask;
     this.paletteViewport.hitArea = new Rectangle(0, 0, PALETTE_W - 16, palH);
+    this.scrollUpBtn.position.set(0, 0);
+    this.scrollDownBtn.position.set(0, palH - 22);
 
     this.statusText.position.set(8, height - 24);
     this.updateStatus();
@@ -237,12 +267,14 @@ export class EditorScene implements Scene {
     const map = this.current;
     if (!map) return;
 
+    const showGround = this.tool === "ground" || this.tool === "portal";
+    const showObjects = this.tool === "objects";
     for (let y = 0; y < EXPLORE_ROWS; y++) {
       for (let x = 0; x < EXPLORE_COLS; x++) {
         const g = map.ground[y][x];
-        if (g && this.ground[g]) this.addCellSprite(g, x, y);
+        if (showGround && g && this.ground[g]) this.addCellSprite(g, x, y);
         const o = map.objects[y][x];
-        if (o && this.ground[o]) this.addCellSprite(o, x, y);
+        if (showObjects && o && this.ground[o]) this.addCellSprite(o, x, y);
       }
     }
 
@@ -275,7 +307,7 @@ export class EditorScene implements Scene {
     }
 
     const r = this.tile * 0.35;
-    for (const portal of map.portals) {
+    for (const portal of this.tool === "portal" ? map.portals : []) {
       const marker = new Graphics()
         .circle(0, 0, r)
         .fill({ color: 0x7fd4ff, alpha: 0.45 })
@@ -342,16 +374,17 @@ export class EditorScene implements Scene {
     this.paletteInner.y = 0;
   }
 
-  private readonly onPaletteWheel = (e: FederatedWheelEvent): void => {
-    const maxY = Math.max(
-      0,
-      this.paletteInner.height -
-        (this.paletteViewport.hitArea as Rectangle).height,
-    );
+  private scrollPalette(dy: number): void {
+    const viewH = (this.paletteViewport.hitArea as Rectangle)?.height ?? 0;
+    const maxY = Math.max(0, this.paletteInner.height - viewH);
     this.paletteInner.y = Math.min(
       0,
-      Math.max(this.paletteInner.y - e.deltaY, -maxY),
+      Math.max(this.paletteInner.y + dy, -maxY),
     );
+  }
+
+  private readonly onPaletteWheel = (e: FederatedWheelEvent): void => {
+    this.scrollPalette(-e.deltaY);
   };
 
   private readonly onGridPointer = (e: FederatedPointerEvent): void => {
