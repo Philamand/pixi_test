@@ -61,7 +61,7 @@ export class Fighter extends Container {
     this.mp = stats.maxMp;
     this.tileX = stats.spawn.x;
     this.tileY = stats.spawn.y;
-    this.facing = stats.team === "enemy" ? "left" : "right";
+    this.facing = stats.team === "enemy" ? "down" : "up";
 
     this.sprite = new AnimatedSprite(sprites.directions[this.facing].idle);
     this.sprite.anchor.set(0.5, 0.8);

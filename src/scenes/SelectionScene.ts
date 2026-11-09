@@ -28,14 +28,14 @@ export class SelectionScene implements Scene {
     this.title.anchor.set(0.5);
     this.container.addChild(this.bg, this.title, this.menu);
 
-    this.app.renderer.on("resize", this.layout);
-    this.layout();
-
     const items: MenuItem[] = [
       { id: "combat", label: "Combat" },
       { id: "explore", label: "Explore" },
     ];
     this.menu.show(items, (id) => this.onSelect(id as SelectionMode));
+
+    this.app.renderer.on("resize", this.layout);
+    this.layout();
   }
 
   exit(): void {
