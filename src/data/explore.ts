@@ -19,68 +19,34 @@ export interface ExploreMap {
   portals: ExplorePortal[];
 }
 
-const MEADOW_LAYOUT: string[] = [
-  "TTTTTTTTTT",
-  "T........T",
-  "T..t.....T",
-  "T....WW..T",
-  "T.,,,,,..T",
-  "T.,WW,,..T",
-  "T........T",
-  "T..###...T",
-  "T..###...T",
-  "T........P",
-  "T....t...T",
-  "T,,,,,,,.T",
-  "T........T",
-  "T..b...r.T",
-  "T.....F..T",
-  "TTTTTTTTTT",
-];
+interface ExploreMapFile {
+  id: string;
+  layout: string[];
+  spawn: Tile;
+  portals?: ExplorePortal[];
+}
 
-const GROVE_LAYOUT: string[] = [
-  "TTTTTTTTTT",
-  "T........T",
-  "T.....t..T",
-  "T..WW....T",
-  "T..,,,,,.T",
-  "T..,,WW..T",
-  "T........T",
-  "T...###..T",
-  "T...###..T",
-  "P........T",
-  "T...t....T",
-  "T.,,,,,,.T",
-  "T........T",
-  "T..r...b.T",
-  "T..F.....T",
-  "TTTTTTTTTT",
-];
+const mapFiles = import.meta.glob<ExploreMapFile>("./maps/*.json", {
+  eager: true,
+});
 
-export const EXPLORE_MAP_MEADOW: ExploreMap = {
-  id: "meadow",
-  layout: MEADOW_LAYOUT,
-  cols: MEADOW_LAYOUT[0].length,
-  rows: MEADOW_LAYOUT.length,
-  spawn: { x: 7, y: 9 },
-  portals: [{ x: 9, y: 9, target: "grove", spawn: { x: 1, y: 9 } }],
-};
+function toExploreMap(file: ExploreMapFile): ExploreMap {
+  return {
+    id: file.id,
+    layout: file.layout,
+    cols: file.layout[0]?.length ?? 0,
+    rows: file.layout.length,
+    spawn: file.spawn,
+    portals: file.portals ?? [],
+  };
+}
 
-export const EXPLORE_MAP_GROVE: ExploreMap = {
-  id: "grove",
-  layout: GROVE_LAYOUT,
-  cols: GROVE_LAYOUT[0].length,
-  rows: GROVE_LAYOUT.length,
-  spawn: { x: 1, y: 9 },
-  portals: [{ x: 0, y: 9, target: "meadow", spawn: { x: 8, y: 9 } }],
-};
+export const EXPLORE_MAPS: Record<string, ExploreMap> = Object.fromEntries(
+  Object.values(mapFiles).map((file) => [file.id, toExploreMap(file)]),
+);
 
-export const EXPLORE_MAPS: Record<string, ExploreMap> = {
-  meadow: EXPLORE_MAP_MEADOW,
-  grove: EXPLORE_MAP_GROVE,
-};
-
-export const EXPLORE_MAP_START = EXPLORE_MAP_MEADOW;
+export const EXPLORE_MAP_START: ExploreMap =
+  EXPLORE_MAPS.meadow ?? Object.values(EXPLORE_MAPS)[0];
 
 const LEGEND: Record<string, readonly string[]> = {
   T: [SUMMER_TILE.tree],
