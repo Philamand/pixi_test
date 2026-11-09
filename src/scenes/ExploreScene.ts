@@ -31,9 +31,12 @@ import {
   type Facing,
   type Tile,
 } from "../utils/grid";
+import { tween, type TweenHandle } from "../utils/tween";
 
 const SPEED_PX_PER_MS = 0.18;
 const MENU_BAR_HEIGHT = 56;
+const FADE_IN_MS = 350;
+const FADE_OUT_MS = 250;
 
 export class ExploreScene implements Scene {
   readonly container = new Container();
@@ -44,6 +47,8 @@ export class ExploreScene implements Scene {
   private readonly markerLayer = new Container();
   private readonly player: AnimatedSprite;
   private readonly menu = new ActionMenu();
+  private readonly fade = new Graphics();
+  private fadeTween: TweenHandle | null = null;
   private facing: Facing = "down";
   private teleported = false;
 
@@ -80,6 +85,7 @@ export class ExploreScene implements Scene {
       this.markerLayer,
       this.player,
       this.menu,
+      this.fade,
     );
 
     this.menu.show([{ id: "menu", label: "Menu" }], () => this.onExit());
@@ -90,6 +96,10 @@ export class ExploreScene implements Scene {
     window.addEventListener("keydown", this.onKeyDown);
     this.app.ticker.add(this.update);
     this.layout();
+    this.fade.alpha = 1;
+    this.fadeTween = tween(this.app.ticker, FADE_IN_MS, (p) => {
+      this.fade.alpha = 1 - p;
+    });
   }
 
   exit(): void {
@@ -97,6 +107,8 @@ export class ExploreScene implements Scene {
     this.app.renderer.off("resize", this.layout);
     window.removeEventListener("keydown", this.onKeyDown);
     this.app.ticker.remove(this.update);
+    this.fadeTween?.cancel();
+    this.fadeTween = null;
     this.path = [];
   }
 
@@ -104,6 +116,7 @@ export class ExploreScene implements Scene {
     const { width, height } = this.app.screen;
 
     this.bg.clear().rect(0, 0, width, height).fill(0x141428);
+    this.fade.clear().rect(0, 0, width, height).fill(0x000000);
 
     const playH = height - MENU_BAR_HEIGHT;
     this.menuBar
@@ -189,6 +202,7 @@ export class ExploreScene implements Scene {
   };
 
   private readonly onPointerDown = (e: FederatedPointerEvent): void => {
+    if (this.teleported) return;
     const tile = this.toTile(e.global);
     if (!tile || isExploreBlocked(this.map, tile.x, tile.y)) return;
     const from: Tile = {
@@ -244,7 +258,14 @@ export class ExploreScene implements Scene {
     const portal = explorePortalAt(this.map, tileX, tileY);
     if (portal) {
       this.teleported = true;
-      this.onTeleport(portal);
+      this.fadeTween = tween(
+        this.app.ticker,
+        FADE_OUT_MS,
+        (p) => {
+          this.fade.alpha = p;
+        },
+        () => this.onTeleport(portal),
+      );
     }
   }
 
