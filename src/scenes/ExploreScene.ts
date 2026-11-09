@@ -65,7 +65,7 @@ export class ExploreScene implements Scene {
     private readonly map: ExploreMap,
     private readonly onExit: () => void,
     private readonly onTeleport: (portal: ExplorePortal) => void,
-    spawn: Tile = map.spawn,
+    spawn: Tile,
   ) {
     this.playerOffset = new Point(
       (spawn.x + 0.5) * EXPLORE_TILE_SIZE,

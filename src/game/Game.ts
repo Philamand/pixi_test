@@ -3,9 +3,9 @@ import type { TilemapSet } from "../assets";
 import {
   EXPLORE_MAP_START,
   EXPLORE_MAPS,
+  exploreArrivalSpawn,
   type ExploreMap,
 } from "../data/explore";
-import type { Tile } from "../utils/grid";
 import { BattleScene } from "../scenes/BattleScene";
 import { ExploreScene } from "../scenes/ExploreScene";
 import { SelectionScene, type SelectionMode } from "../scenes/SelectionScene";
@@ -49,7 +49,7 @@ export class Game {
 
   private startExplore(
     map: ExploreMap = EXPLORE_MAP_START,
-    spawn?: Tile,
+    fromMapId: string | null = null,
   ): void {
     this.scenes.switchTo(
       new ExploreScene(
@@ -60,9 +60,9 @@ export class Game {
         () => this.start(),
         (portal) => {
           const target = EXPLORE_MAPS[portal.target];
-          if (target) this.startExplore(target, portal.spawn);
+          if (target) this.startExplore(target, map.id);
         },
-        spawn,
+        exploreArrivalSpawn(map, fromMapId),
       ),
     );
   }

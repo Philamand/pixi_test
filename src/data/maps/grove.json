@@ -1,20 +1,10 @@
 {
   "id": "grove",
-  "cols": 10,
-  "rows": 16,
-  "spawn": {
-    "x": 1,
-    "y": 9
-  },
   "portals": [
     {
       "x": 0,
       "y": 9,
-      "target": "meadow",
-      "spawn": {
-        "x": 8,
-        "y": 9
-      }
+      "target": "meadow"
     }
   ],
   "blocked": [
