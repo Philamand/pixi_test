@@ -177,6 +177,7 @@ export class EditorScene implements Scene {
 
     const fileItems = [
       { id: "new", label: "New" },
+      { id: "fill", label: "Fill Ground" },
       { id: "save", label: "Save JSON" },
       { id: "import", label: "Import" },
       { id: "back", label: "Back" },
@@ -185,6 +186,7 @@ export class EditorScene implements Scene {
       fileItems,
       (id) => {
         if (id === "new") this.createMap();
+        else if (id === "fill") this.fillGround();
         else if (id === "save") this.saveCurrent();
         else if (id === "import") this.importFile();
         else this.onExit();
@@ -433,6 +435,26 @@ export class EditorScene implements Scene {
     a.download = `${map.id}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  private fillGround(): void {
+    const map = this.current;
+    if (!map) return;
+    let key = this.selectedTile;
+    if (!key || !key.startsWith("ground_")) {
+      key =
+        Object.keys(this.ground)
+          .filter((k) => k.startsWith("ground_"))
+          .sort()[0] ?? null;
+    }
+    if (!key) return;
+    for (let y = 0; y < EXPLORE_ROWS; y++) {
+      for (let x = 0; x < EXPLORE_COLS; x++) {
+        map.ground[y][x] = key;
+      }
+    }
+    this.buildGrid();
+    this.updateStatus();
   }
 
   private createMap(): void {
