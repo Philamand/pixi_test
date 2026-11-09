@@ -35,6 +35,7 @@ export class Game {
         this.app,
         this.tilemaps.summer,
         this.tilemaps.sprites,
+        this.tilemaps.fireball,
         () => this.startBattle(),
       ),
     );

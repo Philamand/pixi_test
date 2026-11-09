@@ -1,4 +1,5 @@
 import {
+  AnimatedSprite,
   Application,
   Container,
   FederatedPointerEvent,
@@ -8,6 +9,7 @@ import {
   Sprite,
   Text,
   Ticker,
+  type Texture,
 } from "pixi.js";
 import type { CharacterSprites, TileTextures } from "../assets";
 import {
@@ -69,6 +71,7 @@ export class BattleScene implements Scene {
     private readonly app: Application,
     private readonly ground: TileTextures,
     private readonly sprites: Record<SpriteSetName, CharacterSprites>,
+    private readonly fireball: Texture[],
     private readonly onRestart: () => void,
   ) {}
 
@@ -395,7 +398,13 @@ export class BattleScene implements Scene {
     this.pendingSkill = null;
     if (skill) f.spendMp(skill.mpCost);
 
-    await Promise.all([this.lunge(f, target), f.attack()]);
+    const actions: Promise<void>[] = [];
+    if (skill?.projectile === "fireball") {
+      actions.push(this.castFireball(f, target));
+    } else {
+      actions.push(this.lunge(f, target), f.attack());
+    }
+    await Promise.all(actions);
 
     if (skill?.healAmount) {
       target.heal(skill.healAmount);
@@ -541,6 +550,35 @@ export class BattleScene implements Scene {
         },
         () => {
           f.playIdle();
+          resolve();
+        },
+      );
+    });
+  }
+
+  private castFireball(from: Fighter, to: Fighter): Promise<void> {
+    return new Promise((resolve) => {
+      const ball = new AnimatedSprite(this.fireball);
+      ball.anchor.set(0.5);
+      const size = Math.max(this.tileW, this.tileH) * 0.75;
+      ball.scale.set(size / this.fireball[0].width);
+      const start = this.tileCenter(from.tile);
+      const end = this.tileCenter(to.tile);
+      ball.position.copyFrom(start);
+      ball.animationSpeed = 0.25;
+      ball.play();
+      this.container.addChild(ball);
+      tween(
+        this.app.ticker,
+        450,
+        (p) => {
+          ball.position.set(
+            start.x + (end.x - start.x) * p,
+            start.y + (end.y - start.y) * p,
+          );
+        },
+        () => {
+          ball.destroy();
           resolve();
         },
       );

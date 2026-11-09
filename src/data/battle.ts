@@ -53,12 +53,13 @@ export const partyStats: FighterStats[] = [
     sprites: SPRITE_SET.assassin,
     skills: [
       {
-        id: "fire",
-        name: "Fire",
+        id: "fireball",
+        name: "Fireball",
         mpCost: 5,
         range: 3,
         power: 1.5,
         magical: true,
+        projectile: "fireball",
       },
       {
         id: "heal",
